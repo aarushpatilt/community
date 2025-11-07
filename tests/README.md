@@ -1,9 +1,9 @@
 # Tests
 
-Place your test cases in this folder.
+To run the test case for login
+cd tests
+.\run_login_tests_simple.ps1
 
-Suggested structure:
-- unit/ for small, focused tests
-- integration/ for end-to-end scenarios
-
-You can add any files or frameworks you prefer.
+To run the test case for purchase
+cd tests
+.\run_purchase_tests_simple.ps1
