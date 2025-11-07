@@ -10,53 +10,105 @@
 #include <regex>
 #include <iostream>
 #include <cassert>
+#include "../src/Backend/LoginService.h"
 
-// Mock function for login validation
-bool validateLogin(const std::string& username, const std::string& password) {
-  // Basic validation - username and password should not be empty
-  if (username.empty() || password.empty()) {
-    return false;
+// Test class for Valid Login Test Case
+class ValidLoginTestCase {
+private:
+  LoginService loginService;
+  UserCredentials credentials;
+  LoginResult result;
+  
+public:
+  ValidLoginTestCase() 
+    : credentials("validuser", "validpass123") {}
+  
+  void setup() {
+    // Setup valid credentials
+    credentials = UserCredentials("validuser", "validpass123");
   }
-  // Simple mock: valid credentials
-  return (username == "validuser" && password == "validpass123");
-}
+  
+  LoginResult execute() {
+    return loginService.authenticate(credentials);
+  }
+  
+  void verify(const LoginResult& loginResult) {
+    REQUIRE(loginResult.success == true);
+    REQUIRE(loginResult.message == "Login successful");
+    REQUIRE(loginResult.username == "validuser");
+  }
+  
+  void run() {
+    setup();
+    LoginResult loginResult = execute();
+    verify(loginResult);
+  }
+};
 
+// Test class for Invalid Login Test Case
+class InvalidLoginTestCase {
+private:
+  LoginService loginService;
+  UserCredentials credentials;
+  LoginResult result;
+  
+public:
+  InvalidLoginTestCase() 
+    : credentials("validuser", "wrongpass") {}
+  
+  void setup() {
+    // Setup invalid credentials (valid username, wrong password)
+    credentials = UserCredentials("validuser", "wrongpass");
+  }
+  
+  LoginResult execute() {
+    return loginService.authenticate(credentials);
+  }
+  
+  void verify(const LoginResult& loginResult) {
+    REQUIRE(loginResult.success == false);
+    REQUIRE(loginResult.message == "Invalid username or password");
+  }
+  
+  void run() {
+    setup();
+    LoginResult loginResult = execute();
+    verify(loginResult);
+  }
+};
+
+// Using the ValidLoginTestCase class with backend LoginService
 TEST_CASE("Login - Valid Username and Valid Password", "[login]") {
-  std::string username = "validuser";
-  std::string password = "validpass123";
-  
-  bool result = validateLogin(username, password);
-  REQUIRE(result == true);
+  ValidLoginTestCase testCase;
+  testCase.run();
 }
 
+// Using the InvalidLoginTestCase class with backend LoginService
 TEST_CASE("Login - Valid Username and Invalid Password", "[login]") {
-  std::string username = "validuser";
-  std::string password = "wrongpass";
-  
-  bool result = validateLogin(username, password);
-  REQUIRE(result == false);
+  InvalidLoginTestCase testCase;
+  testCase.run();
 }
 
 TEST_CASE("Login - Invalid Username and Invalid Password", "[login]") {
-  std::string username = "invaliduser";
-  std::string password = "invalidpass";
+  LoginService loginService;
+  LoginResult result = loginService.authenticate("invaliduser", "invalidpass");
   
-  bool result = validateLogin(username, password);
-  REQUIRE(result == false);
+  REQUIRE(result.success == false);
+  REQUIRE(result.message == "Invalid username or password");
 }
 
 TEST_CASE("Login - Empty Username", "[login]") {
-  std::string username = "";
-  std::string password = "validpass123";
+  LoginService loginService;
+  LoginResult result = loginService.authenticate("", "validpass123");
   
-  bool result = validateLogin(username, password);
-  REQUIRE(result == false);
+  REQUIRE(result.success == false);
+  REQUIRE(result.message == "Username cannot be empty");
 }
 
 TEST_CASE("Login - Empty Password", "[login]") {
-  std::string username = "validuser";
-  std::string password = "";
+  LoginService loginService;
+  LoginResult result = loginService.authenticate("validuser", "");
   
-  bool result = validateLogin(username, password);
-  REQUIRE(result == false);
+  REQUIRE(result.success == false);
+  REQUIRE(result.message == "Password cannot be empty");
 }
