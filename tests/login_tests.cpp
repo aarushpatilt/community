@@ -33,9 +33,9 @@ public:
   }
   
   void verify(const LoginResult& loginResult) {
-    REQUIRE(loginResult.success == true);
-    REQUIRE(loginResult.message == "Login successful");
-    REQUIRE(loginResult.username == "validuser");
+    assert(loginResult.success == true);
+    assert(loginResult.message == "Login successful");
+    assert(loginResult.username == "validuser");
   }
   
   void run() {
@@ -66,8 +66,8 @@ public:
   }
   
   void verify(const LoginResult& loginResult) {
-    REQUIRE(loginResult.success == false);
-    REQUIRE(loginResult.message == "Invalid username or password");
+    assert(loginResult.success == false);
+    assert(loginResult.message == "Invalid username or password");
   }
   
   void run() {
@@ -93,22 +93,22 @@ TEST_CASE("Login - Invalid Username and Invalid Password", "[login]") {
   LoginService loginService;
   LoginResult result = loginService.authenticate("invaliduser", "invalidpass");
   
-  REQUIRE(result.success == false);
-  REQUIRE(result.message == "Invalid username or password");
+  assert(result.success == false);
+  assert(result.message == "Invalid username or password");
 }
 
 TEST_CASE("Login - Empty Username", "[login]") {
   LoginService loginService;
   LoginResult result = loginService.authenticate("", "validpass123");
   
-  REQUIRE(result.success == false);
-  REQUIRE(result.message == "Username cannot be empty");
+  assert(result.success == false);
+  assert(result.message == "Username cannot be empty");
 }
 
 TEST_CASE("Login - Empty Password", "[login]") {
   LoginService loginService;
   LoginResult result = loginService.authenticate("validuser", "");
   
-  REQUIRE(result.success == false);
-  REQUIRE(result.message == "Password cannot be empty");
+  assert(result.success == false);
+  assert(result.message == "Password cannot be empty");
 }

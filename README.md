@@ -1,130 +1,157 @@
-# Community Authentication System
+# Community Authentication System - C++ Backend
 
-A MongoDB-based authentication system with login and signup functionality.
+A C++-based authentication system with login/signup plus a cart and purchase history playground.
 
 ## Prerequisites
 
-- Node.js (v14 or higher)
-- MongoDB (running locally or MongoDB Atlas connection string)
+- C++17 compatible compiler (GCC, Clang, or MSVC)
+- CMake 3.15+ (optional, for CMake builds)
+- HTTP library: cpp-httplib (header-only, download required)
+- JSON library: nlohmann/json (header-only, download required)
 
 ## Installation
 
-1. Install dependencies:
+1. Download required header files:
+
 ```bash
-npm install
+# Download cpp-httplib
+curl -L https://github.com/yhirose/cpp-httplib/releases/download/v0.15.3/httplib.h -o src/Backend/httplib.h
+
+# Download nlohmann/json
+curl -L https://github.com/nlohmann/json/releases/download/v3.11.3/json.hpp -o src/Backend/json.hpp
 ```
 
-2. (Optional) Create a `.env` file in the root directory to override defaults:
-```env
-PORT=3000
-MONGODB_URI=mongodb+srv://test123:test123@cluster0.ooqfbmp.mongodb.net/community-auth?retryWrites=true&w=majority
-JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+2. Build the project:
+
+**Using build script (Linux/Mac):**
+```bash
+chmod +x build.sh
+./build.sh
 ```
 
-**Note:** The server is already configured to use MongoDB Atlas by default. You can skip this step if you want to use the default configuration.
+**Using build script (Windows):**
+```cmd
+build.bat
+```
+
+**Using CMake:**
+```bash
+mkdir build
+cd build
+cmake ..
+make
+```
 
 ## Running the Application
 
-1. The server is configured to use MongoDB Atlas. No local MongoDB setup needed!
-
-2. Start the server:
+1. Start the C++ backend server:
 ```bash
-npm start
+./backend        # Linux/Mac
+backend.exe      # Windows
 ```
 
-For development with auto-reload:
-```bash
-npm run dev
-```
-
-3. Open your browser and navigate to:
+2. Open your browser and navigate to:
 ```
 http://localhost:3000
 ```
 
 ## Features
 
-- **Sign Up**: Create a new account with username, email, and password
-- **Login**: Authenticate with username/email and password
-- **JWT Authentication**: Secure token-based authentication
-- **Password Hashing**: Passwords are hashed using bcrypt
-- **Modern UI**: Clean and responsive design
+- **Sign Up / Login**: JWT-secured auth with field validation
+- **Interactive Store**: Catalog browsing with live search, persistent carts, and checkout
+- **Purchase History**: Orders capture shipping + payment summaries for future reference
+- **Profile Editing**: Update username, email, display name, and bio from the settings panel
+- **Session Controls**: Guided logout confirmation flow
+- **Automated Tests**: C++ unit tests using Catch2 framework
+
+## Project Structure
+
+```
+community/
+├── src/Backend/          # C++ backend source code
+│   ├── Server.cpp/h      # Main HTTP server
+│   ├── Cart.cpp/h        # Shopping cart logic
+│   ├── LoginService.cpp/h # Authentication logic
+│   ├── PurchaseService.cpp/h # Purchase processing
+│   ├── PurchaseHistory.cpp/h # Order history
+│   ├── SearchService.cpp/h   # Catalog search
+│   ├── SettingsService.cpp/h # Profile management
+│   └── main.cpp          # Entry point
+├── public/               # Frontend files (HTML, CSS, JS)
+├── tests/                # C++ unit tests
+├── build.sh / build.bat  # Build scripts
+└── CMakeLists.txt       # CMake configuration
+```
 
 ## API Endpoints
 
-### POST `/api/signup`
-Create a new user account.
+### Public Endpoints
 
-**Request Body:**
-```json
-{
-  "username": "johndoe",
-  "email": "john@example.com",
-  "password": "password123"
-}
-```
+- `POST /api/signup` - Create new user account
+- `POST /api/login` - Login with credentials
+- `GET /api/catalog` - Get product catalog
+- `GET /api/search?q=<query>` - Search products
+- `GET /api/health` - Health check
 
-**Response:**
-```json
-{
-  "success": true,
-  "message": "User created successfully",
-  "token": "jwt-token-here",
-  "user": {
-    "id": "user-id",
-    "username": "johndoe",
-    "email": "john@example.com"
-  }
-}
-```
+### Protected Endpoints (Require Authentication Token)
 
-### POST `/api/login`
-Login with existing credentials.
+- `GET /api/me` - Get current user information
+- `GET /api/cart` - Get shopping cart
+- `POST /api/cart` - Add item to cart
+- `PATCH /api/cart/:productId` - Update cart item quantity
+- `DELETE /api/cart/:productId` - Remove item from cart
+- `POST /api/cart/clear` - Clear entire cart
+- `POST /api/cart/checkout` - Complete purchase
+- `GET /api/purchase-history` - Get order history
+- `PATCH /api/profile` - Update user profile
 
-**Request Body:**
-```json
-{
-  "username": "johndoe",
-  "password": "password123"
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "message": "Login successful",
-  "token": "jwt-token-here",
-  "user": {
-    "id": "user-id",
-    "username": "johndoe",
-    "email": "john@example.com"
-  }
-}
-```
-
-### GET `/api/me`
-Get current user information (requires authentication).
-
-**Headers:**
-```
-Authorization: Bearer <token>
-```
-
-### GET `/api/health`
-Health check endpoint.
+See `API_QUICK_REFERENCE.md` for detailed API documentation.
 
 ## Testing
 
-1. Start the server
-2. Open `http://localhost:3000` in your browser
-3. Try creating a new account with the Sign Up form
-4. Log out and test logging in with your credentials
+### C++ Unit Tests
+
+Run the C++ unit tests:
+
+```bash
+# Windows
+cd tests
+run_login_tests.bat
+run_purchase_tests.bat
+
+# Linux/Mac (compile and run manually)
+g++ -std=c++17 tests/cart_tests.cpp src/Backend/Cart.cpp -I src/Backend -o test_cart
+./test_cart
+```
+
+## Development
+
+### Backend Architecture
+
+The backend is implemented in C++ with the following components:
+
+- **Server**: HTTP server handling all API requests
+- **Cart**: In-memory shopping cart management
+- **LoginService**: User authentication logic
+- **PurchaseService**: Purchase processing and inventory
+- **PurchaseHistory**: Order history tracking
+- **SearchService**: Product catalog and search
+- **SettingsService**: User profile management
+
+### Frontend
+
+The frontend is in the `public/` directory and communicates with the C++ backend via HTTP REST API. See `FRONTEND_INTEGRATION_GUIDE.md` for details on connecting a new frontend.
 
 ## Security Notes
 
 - Change the `JWT_SECRET` in production
 - Use environment variables for sensitive data
-- Consider adding rate limiting for production
+- Implement proper password hashing (bcrypt) in production
 - Use HTTPS in production
+- Add rate limiting for production
 
+## Documentation
+
+- `CPP_BACKEND_SETUP.md` - Complete setup guide for C++ backend
+- `FRONTEND_INTEGRATION_GUIDE.md` - Guide for connecting frontends
+- `API_QUICK_REFERENCE.md` - Quick API reference
