@@ -963,9 +963,15 @@ bool MongoDBService::addPurchase(const std::string& userId, const std::vector<Pu
 }
 
 bool MongoDBService::getPurchaseHistory(const std::string& userId, std::vector<std::string>& historyJson) {
-    if (!connected) return false;
+    if (!connected) {
+        std::cerr << "MongoDB getPurchaseHistory: Not connected to MongoDB" << std::endl;
+        return false;
+    }
 #ifdef HAS_MONGODB
-    if (!db) return false;
+    if (!db) {
+        std::cerr << "MongoDB getPurchaseHistory: Database pointer is null" << std::endl;
+        return false;
+    }
 #endif
     
 #ifdef HAS_MONGODB
@@ -977,6 +983,8 @@ bool MongoDBService::getPurchaseHistory(const std::string& userId, std::vector<s
         // Get all matching documents with simple query
         auto filter = make_document(kvp("userId", userId));
         
+        std::cerr << "MongoDB getPurchaseHistory: Querying orders for userId: " << userId << std::endl;
+        
         // Use find() to get cursor - limit to prevent memory issues
         try {
             mongocxx::options::find opts;
@@ -984,6 +992,7 @@ bool MongoDBService::getPurchaseHistory(const std::string& userId, std::vector<s
             
             auto cursor = orders_collection.find(filter.view(), opts);
             
+            int count = 0;
             // Iterate cursor safely - convert to JSON immediately and store string
             for (auto it = cursor.begin(); it != cursor.end(); ++it) {
                 try {
@@ -991,17 +1000,22 @@ bool MongoDBService::getPurchaseHistory(const std::string& userId, std::vector<s
                     // Convert to JSON immediately while document is valid
                     std::string jsonStr = bsoncxx::to_json(doc);
                     historyJson.push_back(jsonStr);
+                    count++;
+                    std::cerr << "MongoDB getPurchaseHistory: Found order " << count << ": " << jsonStr.substr(0, 100) << "..." << std::endl;
                 } catch (const std::exception& e) {
                     std::cerr << "MongoDB getPurchaseHistory: Error converting document to JSON: " << e.what() << std::endl;
                     // Continue with next document
                 }
             }
+            
+            std::cerr << "MongoDB getPurchaseHistory: Found " << count << " orders for userId: " << userId << std::endl;
         } catch (const std::exception& e) {
             std::cerr << "MongoDB getPurchaseHistory: Cursor error: " << e.what() << std::endl;
             // Return empty history if cursor fails (collection might not exist yet)
             return true; // Return true with empty history
         }
         
+        std::cerr << "MongoDB getPurchaseHistory: Returning " << historyJson.size() << " orders" << std::endl;
         return true;
     } catch (const std::exception& e) {
         std::cerr << "MongoDB getPurchaseHistory error: " << e.what() << std::endl;

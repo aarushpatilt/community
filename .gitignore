@@ -37,7 +37,8 @@ build_*.txt
 Thumbs.db
 
 # MongoDB config (contains passwords)
-mongodb_config.txt
+# mongodb_config.txt
+# Note: Keeping config file in repo for now, but should be gitignored in production
 
 # Test executables
 tests/*.exe

@@ -148,6 +148,12 @@ Server::Server(int port) : port(port) {
     std::string mongoConnStr = readMongoConfig("MONGODB_CONNECTION_STRING", "");
     std::string mongoDbName = readMongoConfig("MONGODB_DATABASE_NAME", "community_store");
     
+    // If no config file, try default local MongoDB connection
+    if (mongoConnStr.empty()) {
+        mongoConnStr = "mongodb://localhost:27017";
+        std::cout << "MongoDB: No config file found. Trying default local connection: " << mongoConnStr << std::endl;
+    }
+    
     if (!mongoConnStr.empty()) {
         // Replace <db_password> placeholder if present
         size_t pos = mongoConnStr.find("<db_password>");
@@ -974,10 +980,13 @@ std::string Server::handleSearch(const std::string& query) {
 }
 
 std::string Server::handleGetPurchaseHistory(const std::string& userId) {
+    std::cerr << "Server handleGetPurchaseHistory: Requested for userId: " << userId << std::endl;
     // Use MongoDB if connected
     if (mongoService.isConnected()) {
+        std::cerr << "Server handleGetPurchaseHistory: MongoDB is connected" << std::endl;
         std::vector<std::string> historyJson;
         if (mongoService.getPurchaseHistory(userId, historyJson)) {
+            std::cerr << "Server handleGetPurchaseHistory: Got " << historyJson.size() << " orders from MongoDB" << std::endl;
             if (!historyJson.empty()) {
                 // Transform MongoDB order format to frontend-expected format
 #ifdef HAS_JSON
