@@ -518,38 +518,38 @@ std::string Server::handleSignup(const std::string& body) {
 #endif
     } else {
         // In-memory storage fallback
-        if (users.find(username) != users.end()) {
-            std::map<std::string, std::string> response;
-            response["success"] = "false";
-            response["message"] = "Username already exists";
-            return SimpleJSON::stringify(response);
-        }
+    if (users.find(username) != users.end()) {
+        std::map<std::string, std::string> response;
+        response["success"] = "false";
+        response["message"] = "Username already exists";
+        return SimpleJSON::stringify(response);
+    }
 
         // Check if email exists (case-insensitive)
         std::string lowerEmail = email;
         std::transform(lowerEmail.begin(), lowerEmail.end(), lowerEmail.begin(), ::tolower);
-        for (const auto& pair : users) {
+    for (const auto& pair : users) {
             std::string existingLower = pair.second.email;
             std::transform(existingLower.begin(), existingLower.end(), existingLower.begin(), ::tolower);
             if (existingLower == lowerEmail) {
-                std::map<std::string, std::string> response;
-                response["success"] = "false";
-                response["message"] = "Email already exists";
-                return SimpleJSON::stringify(response);
-            }
+            std::map<std::string, std::string> response;
+            response["success"] = "false";
+            response["message"] = "Email already exists";
+            return SimpleJSON::stringify(response);
         }
+    }
 
-        // Create new user
-        User newUser;
-        newUser.id = std::to_string(users.size() + 1);
-        newUser.username = username;
-        newUser.email = email;
-        newUser.password = password; // TODO: Hash with bcrypt in production
-        users[username] = newUser;
+    // Create new user
+    User newUser;
+    newUser.id = std::to_string(users.size() + 1);
+    newUser.username = username;
+    newUser.email = email;
+    newUser.password = password; // TODO: Hash with bcrypt in production
+    users[username] = newUser;
 
-        // Generate token (simplified - use JWT library in production)
-        std::string token = "token_" + username + "_" + std::to_string(time(nullptr));
-        tokens[token] = newUser.id;
+    // Generate token (simplified - use JWT library in production)
+    std::string token = "token_" + username + "_" + std::to_string(time(nullptr));
+    tokens[token] = newUser.id;
 
 #ifdef HAS_JSON
     // Use nlohmann/json for nested user object
@@ -643,30 +643,30 @@ std::string Server::handleLogin(const std::string& body) {
         return SimpleJSON::stringify(response);
     } else {
         // In-memory storage fallback
-        // Try LoginService first (for test users)
-        LoginService loginService;
-        LoginResult result = loginService.authenticate(username, password);
+    // Try LoginService first (for test users)
+    LoginService loginService;
+    LoginResult result = loginService.authenticate(username, password);
 
-        // Also check database users
-        if (!result.success && users.find(username) != users.end()) {
-            if (users[username].password == password) {
-                result.success = true;
-                result.message = "Login successful";
-                result.username = username;
-            }
+    // Also check database users
+    if (!result.success && users.find(username) != users.end()) {
+        if (users[username].password == password) {
+            result.success = true;
+            result.message = "Login successful";
+            result.username = username;
+        }
+    }
+
+    if (result.success) {
+        // Generate token
+        std::string token = "token_" + username + "_" + std::to_string(time(nullptr));
+        std::string userId = result.username;
+        std::string email = "";
+        if (users.find(username) != users.end()) {
+            userId = users[username].id;
+            email = users[username].email;
         }
 
-        if (result.success) {
-            // Generate token
-            std::string token = "token_" + username + "_" + std::to_string(time(nullptr));
-            std::string userId = result.username;
-            std::string email = "";
-            if (users.find(username) != users.end()) {
-                userId = users[username].id;
-                email = users[username].email;
-            }
-
-            tokens[token] = userId;
+        tokens[token] = userId;
 
 #ifdef HAS_JSON
         // Use nlohmann/json for nested user object
@@ -694,11 +694,11 @@ std::string Server::handleLogin(const std::string& body) {
         }
         return SimpleJSON::stringify(response);
 #endif
-        } else {
-            std::map<std::string, std::string> response;
-            response["success"] = "false";
-            response["message"] = result.message;
-            return SimpleJSON::stringify(response);
+    } else {
+        std::map<std::string, std::string> response;
+        response["success"] = "false";
+        response["message"] = result.message;
+        return SimpleJSON::stringify(response);
         }
     }
 }
@@ -722,11 +722,11 @@ std::string Server::handleGetCart(const std::string& userId) {
         }
     } else {
         // In-memory storage fallback
-        for (auto& pair : users) {
-            if (pair.second.id == userId) {
+    for (auto& pair : users) {
+        if (pair.second.id == userId) {
                 user = pair.second;
                 found = true;
-                break;
+            break;
             }
         }
     }
@@ -789,24 +789,24 @@ std::string Server::handleAddToCart(const std::string& body, const std::string& 
         mongoService.updateCart(userId, cartItems);
     } else {
         // In-memory storage fallback
-        User* user = nullptr;
-        for (auto& pair : users) {
-            if (pair.second.id == userId) {
-                user = &pair.second;
-                break;
-            }
+    User* user = nullptr;
+    for (auto& pair : users) {
+        if (pair.second.id == userId) {
+            user = &pair.second;
+            break;
         }
+    }
 
-        if (!user) {
-            std::map<std::string, std::string> response;
-            response["success"] = "false";
-            response["message"] = "User not found";
-            return SimpleJSON::stringify(response);
-        }
+    if (!user) {
+        std::map<std::string, std::string> response;
+        response["success"] = "false";
+        response["message"] = "User not found";
+        return SimpleJSON::stringify(response);
+    }
 
-        // Add to cart
-        CartItem cartItem(productId, product->name, product->price, quantity);
-        user->cart.addItem(cartItem);
+    // Add to cart
+    CartItem cartItem(productId, product->name, product->price, quantity);
+    user->cart.addItem(cartItem);
     }
 
     return handleGetCart(userId);
@@ -835,26 +835,26 @@ std::string Server::handleUpdateCart(const std::string& productId, unsigned int 
         mongoService.updateCart(userId, cartItems);
     } else {
         // In-memory storage fallback
-        User* user = nullptr;
-        for (auto& pair : users) {
-            if (pair.second.id == userId) {
-                user = &pair.second;
-                break;
-            }
+    User* user = nullptr;
+    for (auto& pair : users) {
+        if (pair.second.id == userId) {
+            user = &pair.second;
+            break;
         }
+    }
 
-        if (!user) {
-            std::map<std::string, std::string> response;
-            response["success"] = "false";
-            response["message"] = "User not found";
-            return SimpleJSON::stringify(response);
-        }
+    if (!user) {
+        std::map<std::string, std::string> response;
+        response["success"] = "false";
+        response["message"] = "User not found";
+        return SimpleJSON::stringify(response);
+    }
 
-        if (!user->cart.updateQuantity(productId, quantity)) {
-            std::map<std::string, std::string> response;
-            response["success"] = "false";
-            response["message"] = "Item not found in cart";
-            return SimpleJSON::stringify(response);
+    if (!user->cart.updateQuantity(productId, quantity)) {
+        std::map<std::string, std::string> response;
+        response["success"] = "false";
+        response["message"] = "Item not found in cart";
+        return SimpleJSON::stringify(response);
         }
     }
 
@@ -884,26 +884,26 @@ std::string Server::handleRemoveFromCart(const std::string& productId, const std
         mongoService.updateCart(userId, cartItems);
     } else {
         // In-memory storage fallback
-        User* user = nullptr;
-        for (auto& pair : users) {
-            if (pair.second.id == userId) {
-                user = &pair.second;
-                break;
-            }
+    User* user = nullptr;
+    for (auto& pair : users) {
+        if (pair.second.id == userId) {
+            user = &pair.second;
+            break;
         }
+    }
 
-        if (!user) {
-            std::map<std::string, std::string> response;
-            response["success"] = "false";
-            response["message"] = "User not found";
-            return SimpleJSON::stringify(response);
-        }
+    if (!user) {
+        std::map<std::string, std::string> response;
+        response["success"] = "false";
+        response["message"] = "User not found";
+        return SimpleJSON::stringify(response);
+    }
 
-        if (!user->cart.removeItem(productId)) {
-            std::map<std::string, std::string> response;
-            response["success"] = "false";
-            response["message"] = "Item not found in cart";
-            return SimpleJSON::stringify(response);
+    if (!user->cart.removeItem(productId)) {
+        std::map<std::string, std::string> response;
+        response["success"] = "false";
+        response["message"] = "Item not found in cart";
+        return SimpleJSON::stringify(response);
         }
     }
 
@@ -916,22 +916,22 @@ std::string Server::handleClearCart(const std::string& userId) {
         mongoService.clearCart(userId);
     } else {
         // In-memory storage fallback
-        User* user = nullptr;
-        for (auto& pair : users) {
-            if (pair.second.id == userId) {
-                user = &pair.second;
-                break;
-            }
+    User* user = nullptr;
+    for (auto& pair : users) {
+        if (pair.second.id == userId) {
+            user = &pair.second;
+            break;
         }
+    }
 
-        if (!user) {
-            std::map<std::string, std::string> response;
-            response["success"] = "false";
-            response["message"] = "User not found";
-            return SimpleJSON::stringify(response);
-        }
+    if (!user) {
+        std::map<std::string, std::string> response;
+        response["success"] = "false";
+        response["message"] = "User not found";
+        return SimpleJSON::stringify(response);
+    }
 
-        user->cart.clear();
+    user->cart.clear();
     }
     
     return "{\"success\":true,\"cart\":[],\"total\":0}";
@@ -1192,11 +1192,11 @@ std::string Server::handleCheckout(const std::string& body, const std::string& u
         found = mongoService.findUserById(userId, user);
     } else {
         // In-memory storage fallback
-        for (auto& pair : users) {
-            if (pair.second.id == userId) {
+    for (auto& pair : users) {
+        if (pair.second.id == userId) {
                 user = pair.second;
                 found = true;
-                break;
+            break;
             }
         }
     }
@@ -1267,10 +1267,10 @@ std::string Server::handleCheckout(const std::string& body, const std::string& u
         }
     } else {
         // In-memory storage fallback
-        // Record purchases in history
+    // Record purchases in history
         user.history.recordPurchases(purchaseRecords);
-        
-        // Clear cart
+
+    // Clear cart
         user.cart.clear();
         
         // Update in-memory user
@@ -1336,11 +1336,11 @@ std::string Server::handleGetProfile(const std::string& userId) {
         found = mongoService.findUserById(userId, user);
     } else {
         // In-memory storage fallback
-        for (auto& pair : users) {
-            if (pair.second.id == userId) {
+    for (auto& pair : users) {
+        if (pair.second.id == userId) {
                 user = pair.second;
                 found = true;
-                break;
+            break;
             }
         }
     }
@@ -1377,11 +1377,11 @@ std::string Server::handleUpdateProfile(const std::string& body, const std::stri
         found = mongoService.findUserById(userId, user);
     } else {
         // In-memory storage fallback
-        for (auto& pair : users) {
-            if (pair.second.id == userId) {
+    for (auto& pair : users) {
+        if (pair.second.id == userId) {
                 user = pair.second;
                 found = true;
-                break;
+            break;
             }
         }
     }
@@ -1417,7 +1417,7 @@ std::string Server::handleUpdateProfile(const std::string& body, const std::stri
                     usernameExists = true;
                 }
             } else {
-                if (users.find(validation.value) != users.end() && users[validation.value].id != userId) {
+            if (users.find(validation.value) != users.end() && users[validation.value].id != userId) {
                     usernameExists = true;
                 }
             }
@@ -1448,12 +1448,12 @@ std::string Server::handleUpdateProfile(const std::string& body, const std::stri
                 // Case-insensitive email comparison for in-memory storage
                 std::string lowerEmail = validation.value;
                 std::transform(lowerEmail.begin(), lowerEmail.end(), lowerEmail.begin(), ::tolower);
-                for (const auto& pair : users) {
+            for (const auto& pair : users) {
                     std::string existingLower = pair.second.email;
                     std::transform(existingLower.begin(), existingLower.end(), existingLower.begin(), ::tolower);
                     if (existingLower == lowerEmail && pair.second.id != userId) {
-                        emailExists = true;
-                        break;
+                    emailExists = true;
+                    break;
                     }
                 }
             }

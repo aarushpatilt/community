@@ -5,6 +5,15 @@
 *.dll
 *.lib
 *.a
+*.so
+*.dylib
+
+# Test executables and build artifacts
+tests/*.exe
+tests/*.log
+tests/compile_*.log
+tests/*_output.txt
+tests/*_error.txt
 
 # Log files
 *.log
