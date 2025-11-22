@@ -377,6 +377,42 @@ window.addEventListener('DOMContentLoaded', () => {
 // STORE FUNCTIONALITY
 // ============================================================================
 
+// Track current search to prevent double rendering and race conditions
+let currentSearchQuery = null;
+let currentSearchId = 0;
+let searchAbortController = null;
+
+// Helper function to clean up search title
+function removeSearchTitle() {
+    const catalogList = document.getElementById('catalog-list');
+    if (catalogList && catalogList.parentElement) {
+        // Remove all titles that might exist (in case of duplicates)
+        const siblings = Array.from(catalogList.parentElement.children);
+        siblings.forEach(sibling => {
+            if (sibling !== catalogList && 
+                (sibling.id === 'search-results-title' || 
+                 (sibling.textContent && sibling.textContent.includes('Search Results')))) {
+                sibling.remove();
+            }
+        });
+    }
+}
+
+// Helper function to add search title
+function addSearchTitle() {
+    const catalogList = document.getElementById('catalog-list');
+    if (catalogList) {
+        // Remove existing title first
+        removeSearchTitle();
+        
+        const title = document.createElement('p');
+        title.id = 'search-results-title';
+        title.style.cssText = 'position: absolute; top: 300px; left: 50%; transform: translateX(-50%); width: 935px; color: rgba(22,79,27,1); font-family: Inria Serif, serif; font-size: 64px; text-align: center; margin: 0 0 20px 0; z-index: 10;';
+        title.textContent = 'Search Results';
+        catalogList.parentElement.insertBefore(title, catalogList);
+    }
+}
+
 // Helper function to perform search - make it globally accessible
 window.performSearch = function performSearch(query) {
     console.log('performSearch called with query:', query);
@@ -385,10 +421,31 @@ window.performSearch = function performSearch(query) {
     
     if (!query || !query.trim()) {
         console.log('Empty query, loading catalog');
+        // Cancel any pending search
+        if (searchAbortController) {
+            searchAbortController.abort();
+            searchAbortController = null;
+        }
+        currentSearchQuery = null;
+        currentSearchId++;
+        removeSearchTitle();
         if (startSearchText) startSearchText.style.display = 'block';
+        if (catalogList) catalogList.innerHTML = '';
         loadCatalog();
         return;
     }
+    
+    const trimmedQuery = query.trim();
+    
+    // Cancel previous search if it's still running
+    if (searchAbortController) {
+        searchAbortController.abort();
+    }
+    
+    // Create new abort controller for this search
+    searchAbortController = new AbortController();
+    const searchId = ++currentSearchId;
+    currentSearchQuery = trimmedQuery;
     
     // Hide "Start Your Search" text when searching - do this immediately and forcefully
     if (startSearchText) {
@@ -399,70 +456,125 @@ window.performSearch = function performSearch(query) {
         console.log('Hiding start search text');
     }
     
+    // Clear old results and title immediately when new search starts to prevent overlap/flash
+    // This must happen synchronously before any async operations
+    if (catalogList) {
+        // Remove all child nodes completely
+        while (catalogList.firstChild) {
+            catalogList.removeChild(catalogList.firstChild);
+        }
+    }
+    removeSearchTitle();
+    
     // Get SAMPLE_PRODUCTS - make sure it's available
     const sampleProducts = window.SAMPLE_PRODUCTS || (typeof SAMPLE_PRODUCTS !== 'undefined' ? SAMPLE_PRODUCTS : []);
     
-    if (!sampleProducts || sampleProducts.length === 0) {
-        console.error('SAMPLE_PRODUCTS not available');
-        if (catalogList) {
-            catalogList.innerHTML = '<p style="color: rgba(0,0,0,0.5); font-family: Inter, sans-serif; font-size: 32px; text-align: center; margin-top: 100px;">Search unavailable - products not loaded</p>';
-        }
-        return;
-    }
-    
-    // Use sample products filtered by query (immediate, no API call needed)
-    const queryLower = query.toLowerCase();
-    const results = sampleProducts.filter(p => {
-        if (!p) return false;
-        const nameMatch = p.name && p.name.toLowerCase().includes(queryLower);
-        const descMatch = p.description && p.description.toLowerCase().includes(queryLower);
-        return nameMatch || descMatch;
-    });
-    
-    console.log('Filtered results:', results.length, results);
-    
-    // Ensure "Start Your Search" text is hidden (double-check)
-    if (startSearchText) {
-        startSearchText.style.setProperty('display', 'none', 'important');
-        startSearchText.style.setProperty('visibility', 'hidden', 'important');
-        startSearchText.style.setProperty('opacity', '0', 'important');
-        startSearchText.classList.add('hidden');
-    }
-    
-    if (results.length > 0) {
-        renderSearchResults(results);
-        // Update search results title
-        if (catalogList) {
-            // Remove existing title if any
-            const existingTitle = catalogList.previousElementSibling;
-            if (existingTitle && existingTitle.textContent && existingTitle.textContent.includes('Search Results')) {
-                existingTitle.remove();
-            }
-            const title = document.createElement('p');
-            title.style.cssText = 'position: absolute; top: 300px; left: 50%; transform: translateX(-50%); width: 935px; color: rgba(22,79,27,1); font-family: Inria Serif, serif; font-size: 64px; text-align: center; margin: 0 0 20px 0; z-index: 10;';
-            title.textContent = 'Search Results';
-            catalogList.parentElement.insertBefore(title, catalogList);
-        }
-    } else {
-        console.log('No results found');
-        if (catalogList) {
-            catalogList.innerHTML = '<p style="color: rgba(0,0,0,0.5); font-family: Inter, sans-serif; font-size: 32px; text-align: center; margin-top: 100px;">No results found</p>';
-        }
-        // "Start Your Search" text is already hidden above
-    }
-    
-    // Also try API search in background (optional)
+    // Try API search first, fall back to local search if API fails
     (async () => {
+        // Check immediately if search was cancelled before doing any work
+        if (currentSearchId !== searchId || currentSearchQuery !== trimmedQuery) {
+            console.log('Search was cancelled before starting');
+            return;
+        }
+        
+        let resultsToRender = null;
+        
         try {
-            const response = await fetch(`${API_BASE_URL}/search?q=${encodeURIComponent(query)}`);
+            const response = await fetch(`${API_BASE_URL}/search?q=${encodeURIComponent(trimmedQuery)}`, {
+                signal: searchAbortController.signal
+            });
+            
+            // Check again after fetch completes
+            if (currentSearchId !== searchId || currentSearchQuery !== trimmedQuery) {
+                console.log('Search was cancelled during fetch, ignoring results');
+                return;
+            }
+            
             const data = await response.json();
+            
+            // Check again after parsing JSON
+            if (currentSearchId !== searchId || currentSearchQuery !== trimmedQuery) {
+                console.log('Search was cancelled after fetch, ignoring results');
+                return;
+            }
             
             if (data.success && data.results && data.results.length > 0) {
                 console.log('API returned results:', data.results.length);
-                renderSearchResults(data.results);
+                resultsToRender = data.results;
             }
         } catch (error) {
+            // Ignore abort errors
+            if (error.name === 'AbortError') {
+                console.log('Search was cancelled');
+                return;
+            }
             console.error('API search error (using sample products):', error);
+        }
+        
+        // Check again if search is still current before doing local search
+        if (currentSearchId !== searchId || currentSearchQuery !== trimmedQuery) {
+            console.log('Search was cancelled or superseded, ignoring local search');
+            return;
+        }
+        
+        // Fall back to local search if API didn't return results
+        if (!resultsToRender && sampleProducts && sampleProducts.length > 0) {
+            const queryLower = trimmedQuery.toLowerCase();
+            const localResults = sampleProducts.filter(p => {
+                // Check during filtering if search was cancelled
+                if (currentSearchId !== searchId || currentSearchQuery !== trimmedQuery) {
+                    return false;
+                }
+                if (!p) return false;
+                const nameMatch = p.name && p.name.toLowerCase().includes(queryLower);
+                const descMatch = p.description && p.description.toLowerCase().includes(queryLower);
+                return nameMatch || descMatch;
+            });
+            
+            // Final check before using local results
+            if (currentSearchId === searchId && currentSearchQuery === trimmedQuery) {
+                if (localResults.length > 0) {
+                    console.log('Using local filtered results:', localResults.length);
+                    resultsToRender = localResults;
+                }
+            } else {
+                console.log('Search was cancelled during local search, ignoring results');
+                return;
+            }
+        }
+        
+        // Final check before rendering - must be the exact same search
+        // Double-check that this search is still current (prevent race conditions)
+        if (currentSearchId === searchId && currentSearchQuery === trimmedQuery) {
+            // One more check right before DOM manipulation to prevent flash
+            if (currentSearchId !== searchId || currentSearchQuery !== trimmedQuery) {
+                console.log('Search was superseded at the last moment, ignoring render');
+                return;
+            }
+            
+            if (resultsToRender && resultsToRender.length > 0) {
+                // Ensure catalog list is clear before rendering (defensive check)
+                if (catalogList) {
+                    while (catalogList.firstChild) {
+                        catalogList.removeChild(catalogList.firstChild);
+                    }
+                }
+                removeSearchTitle();
+                renderSearchResults(resultsToRender);
+                addSearchTitle();
+            } else {
+                console.log('No results found');
+                // Clear completely
+                if (catalogList) {
+                    while (catalogList.firstChild) {
+                        catalogList.removeChild(catalogList.firstChild);
+                    }
+                    catalogList.innerHTML = '<p style="color: rgba(0,0,0,0.5); font-family: Inter, sans-serif; font-size: 32px; text-align: center; margin-top: 100px;">No results found</p>';
+                }
+                removeSearchTitle();
+            }
+        } else {
+            console.log('Search results ignored - newer search in progress');
         }
     })();
 }
@@ -517,87 +629,109 @@ function initializeStore() {
     const startSearchText = document.getElementById('start-search-text');
     
     // Set up search functionality - ensure it works even if DOM isn't ready
+    // Store handlers and timeout in module scope to prevent duplicates
+    let searchHandlersSetup = false;
+    let searchTimeout = null;
+    let searchFormHandler = null;
+    let searchInputHandler = null;
+    let searchButtonHandler = null;
+    
     function setupSearchHandlers() {
+        // Only set up once to prevent duplicate listeners
+        if (searchHandlersSetup) {
+            return;
+        }
+        
         const form = document.getElementById('search-form');
         const input = document.getElementById('catalog-search');
         const startText = document.getElementById('start-search-text');
         const searchButton = document.querySelector('#store-view .v1_64');
         
+        if (!form || !input) {
+            return; // DOM not ready yet
+        }
+        
         console.log('Setting up search handlers:', { form: !!form, input: !!input, searchButton: !!searchButton, performSearch: typeof performSearch });
         
-        if (form && input) {
-            // Don't clone the form - it removes inline handlers
-            // Instead, just attach event listeners
-            const newInput = input;
-            
-            // Form submit handler - add both inline and event listener
-            const formRef = document.getElementById('search-form');
-            if (formRef) {
-                formRef.addEventListener('submit', (event) => {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    const query = newInput ? newInput.value.trim() : '';
-                    console.log('Form submit handler - query:', query);
-                    if (!query) {
-                        if (startText) startText.style.display = 'block';
-                        loadCatalog();
-                        return false;
-                    }
-                    if (startText) startText.style.display = 'none';
+        // Form submit handler
+        if (form) {
+            searchFormHandler = (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                const query = input.value.trim();
+                console.log('Form submit handler - query:', query);
+                
+                // Clear any pending timeout
+                if (searchTimeout) {
+                    clearTimeout(searchTimeout);
+                    searchTimeout = null;
+                }
+                
+                if (!query) {
+                    if (startText) startText.style.display = 'block';
+                    loadCatalog();
+                    return false;
+                }
+                if (startText) startText.style.display = 'none';
+                if (typeof performSearch === 'function') {
+                    performSearch(query);
+                } else {
+                    console.error('performSearch function not available');
+                }
+                return false;
+            };
+            form.addEventListener('submit', searchFormHandler);
+        }
+        
+        // Real-time search as user types
+        if (input) {
+            searchInputHandler = () => {
+                const query = input.value.trim();
+                console.log('Input event - query:', query);
+                
+                // Clear previous timeout
+                if (searchTimeout) {
+                    clearTimeout(searchTimeout);
+                    searchTimeout = null;
+                }
+                
+                if (!query) {
+                    if (startText) startText.style.display = 'block';
+                    loadCatalog();
+                    return;
+                }
+                
+                if (startText) startText.style.display = 'none';
+                
+                // Debounce search - wait 300ms after user stops typing
+                searchTimeout = setTimeout(() => {
+                    console.log('Performing search for:', query);
                     if (typeof performSearch === 'function') {
                         performSearch(query);
                     } else {
                         console.error('performSearch function not available');
                     }
-                    return false;
-                });
-            }
-            
-            // Real-time search as user types
-            if (newInput) {
-                let searchTimeout;
-                newInput.addEventListener('input', () => {
-                    const query = newInput.value.trim();
-                    console.log('Input event - query:', query);
-                    
-                    // Clear previous timeout
-                    if (searchTimeout) {
-                        clearTimeout(searchTimeout);
-                    }
-                    
-                    if (!query) {
-                        if (startText) startText.style.display = 'block';
-                        loadCatalog();
-                        return;
-                    }
-                    
-                    if (startText) startText.style.display = 'none';
-                    
-                    // Debounce search - wait 300ms after user stops typing
-                    searchTimeout = setTimeout(() => {
-                        console.log('Performing search for:', query);
-                        if (typeof performSearch === 'function') {
-                            performSearch(query);
-                        } else {
-                            console.error('performSearch function not available');
-                        }
-                    }, 300);
-                });
-            }
+                    searchTimeout = null;
+                }, 300);
+            };
+            input.addEventListener('input', searchInputHandler);
         }
         
-        // Search button click handler - add event listener in addition to onclick (don't remove onclick)
+        // Search button click handler
         if (searchButton) {
-            // Don't remove onclick - keep it for immediate functionality
-            // Just add event listener as backup
-            searchButton.addEventListener('click', (event) => {
+            searchButtonHandler = (event) => {
                 event.preventDefault();
                 event.stopPropagation();
-                const input = document.getElementById('catalog-search');
-                const query = input ? input.value.trim() : '';
+                
+                // Clear any pending timeout
+                if (searchTimeout) {
+                    clearTimeout(searchTimeout);
+                    searchTimeout = null;
+                }
+                
+                const query = input.value.trim();
                 console.log('Search button clicked (event listener) - query:', query);
                 if (query) {
-                    const startText = document.getElementById('start-search-text');
                     if (startText) startText.style.display = 'none';
                     if (typeof performSearch === 'function') {
                         performSearch(query);
@@ -605,19 +739,25 @@ function initializeStore() {
                         console.error('performSearch function not available');
                     }
                 } else {
-                    const startText = document.getElementById('start-search-text');
                     if (startText) startText.style.display = 'block';
                     loadCatalog();
                 }
                 return false;
-            });
+            };
+            searchButton.addEventListener('click', searchButtonHandler);
         }
+        
+        searchHandlersSetup = true;
     }
     
     // Set up search handlers - try multiple times to ensure DOM is ready
     setupSearchHandlers();
     setTimeout(setupSearchHandlers, 100);
     setTimeout(setupSearchHandlers, 500);
+    
+    // Set up global buy button handler using event delegation
+    // This ensures buy buttons work everywhere (catalog, search results, etc.)
+    setupBuyButtonHandler();
     
     // Load initial data (only if no search query)
     const currentSearchValue = searchInput ? searchInput.value.trim() : '';
@@ -645,13 +785,28 @@ function renderSearchResults(results) {
         console.log('renderSearchResults: Hiding start search text');
     }
     
+    // Remove search title first to prevent duplicates
+    removeSearchTitle();
+    
     if (!results || results.length === 0) {
+        // Clear completely before showing no results
+        while (catalogList.firstChild) {
+            catalogList.removeChild(catalogList.firstChild);
+        }
         catalogList.innerHTML = '<p style="color: rgba(0,0,0,0.5); font-family: Inter, sans-serif; font-size: 32px; text-align: center; margin-top: 100px;">No results found</p>';
         return;
     }
     
+    // Clear any existing content completely to prevent overlay
+    // Use removeChild to ensure all nodes are removed
+    while (catalogList.firstChild) {
+        catalogList.removeChild(catalogList.firstChild);
+    }
+    
     // Match Figma design: items with image placeholder, "Search Result" text, description, price, and "Buy" button
-    catalogList.innerHTML = results.map((item, index) => `
+    catalogList.innerHTML = results.map((item, index) => {
+        const productId = String(item.id).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        return `
         <div class="v1_${150 + index * 8}" style="position: relative; width: 100%; height: 150px; margin-bottom: 20px; background: rgba(255,255,255,0.9); border-radius: 10px; display: flex; align-items: center; padding: 20px; cursor: pointer;" data-product-id="${item.id}">
             <div style="width: 150px; height: 150px; background: rgba(217,217,217,1); border-radius: 5px; margin-right: 20px; display: flex; align-items: center; justify-content: center; color: rgba(0,0,0,1); font-family: Inter, sans-serif;">Image</div>
             <div style="flex: 1;">
@@ -659,26 +814,115 @@ function renderSearchResults(results) {
                 <p style="margin: 0 0 10px 0; color: rgba(0,0,0,0.5); font-family: Inter, sans-serif; font-size: 32px;">${item.description || 'Item description.'}</p>
                 <p style="margin: 0; font-weight: bold; color: rgba(0,0,0,1); font-family: Inter, sans-serif; font-size: 32px;">$${item.price ? item.price.toFixed(2) : 'Price'}</p>
             </div>
-            <button onclick="event.stopPropagation(); if(window.addToCart) window.addToCart('${String(item.id).replace(/'/g, "\\'")}')" style="width: 133px; height: 100px; background: rgba(22,79,27,1); color: white; border: none; border-radius: 20px; cursor: pointer; font-family: Inter, sans-serif; font-size: 32px; margin-left: 20px;">Buy</button>
+            <button data-product-id="${item.id}" class="buy-button" onclick="event.stopPropagation(); if(window.addToCart && typeof window.addToCart === 'function') { window.addToCart('${productId}'); } else { console.error('addToCart not available'); }" style="width: 133px; height: 100px; background: rgba(22,79,27,1); color: white; border: none; border-radius: 20px; cursor: pointer; font-family: Inter, sans-serif; font-size: 32px; margin-left: 20px;">Buy</button>
         </div>
-    `).join('');
+        `;
+    }).join('');
     
     // Use event delegation on the catalog list for better reliability
     // Remove any existing listener first
     catalogList.removeEventListener('click', handleProductClick);
     catalogList.addEventListener('click', handleProductClick);
+    
+    // Add event delegation for Buy buttons - use capture phase for better reliability
+    catalogList.removeEventListener('click', handleBuyButtonClick, true);
+    catalogList.addEventListener('click', handleBuyButtonClick, true);
+    
+    // Also ensure the global handler is set up
+    setupBuyButtonHandler();
+}
+
+// Event handler for Buy button clicks (event delegation)
+function handleBuyButtonClick(e) {
+    console.log('handleBuyButtonClick called', e.target, e.target.className);
+    
+    // Check if clicked element is a Buy button or inside one
+    const buyButton = e.target.closest('.buy-button');
+    if (!buyButton) {
+        // Also check if the target itself is a buy button
+        if (e.target.classList && e.target.classList.contains('buy-button')) {
+            // Target is the button itself
+            const btn = e.target;
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            
+            handleBuyButtonAction(btn);
+            return;
+        }
+        return;
+    }
+    
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+    
+    handleBuyButtonAction(buyButton);
+}
+
+function handleBuyButtonAction(buyButton) {
+    
+    // Prevent multiple rapid clicks
+    if (buyButton.disabled) {
+        console.log('Buy button already processing, ignoring click');
+        return;
+    }
+    
+    const productId = buyButton.getAttribute('data-product-id');
+    if (!productId) {
+        console.error('Buy button clicked but no productId found', buyButton);
+        return;
+    }
+    
+    // Disable button immediately to prevent double-clicks
+    buyButton.disabled = true;
+    buyButton.style.opacity = '0.6';
+    buyButton.style.cursor = 'wait';
+    
+    console.log('Buy button clicked for product:', productId);
+    
+    // Check for addToCart function
+    const addToCartFunc = window.addToCart;
+    if (!addToCartFunc || typeof addToCartFunc !== 'function') {
+        console.error('addToCart function not available', { addToCart: window.addToCart, type: typeof window.addToCart });
+        showMessage('Unable to add item to cart. Please refresh the page.', 'error');
+        // Re-enable button
+        buyButton.disabled = false;
+        buyButton.style.opacity = '1';
+        buyButton.style.cursor = 'pointer';
+        return;
+    }
+    
+    // Call addToCart - it's async, so handle it properly
+    Promise.resolve(addToCartFunc(productId))
+        .then(() => {
+            // Success - button will be re-enabled after delay
+            console.log('addToCart completed successfully');
+        })
+        .catch((error) => {
+            console.error('Error calling addToCart:', error);
+            showMessage('Failed to add item to cart', 'error');
+        })
+        .finally(() => {
+            // Re-enable button after a delay
+            setTimeout(() => {
+                buyButton.disabled = false;
+                buyButton.style.opacity = '1';
+                buyButton.style.cursor = 'pointer';
+            }, 1000);
+        });
 }
 
 // Event handler for product item clicks (event delegation)
 function handleProductClick(e) {
+    // Don't trigger if clicking the Buy button - check this first
+    if (e.target.tagName === 'BUTTON' || e.target.closest('.buy-button') || e.target.classList.contains('buy-button')) {
+        return;
+    }
+    
     // Find the product item div (closest element with data-product-id)
     const productItem = e.target.closest('[data-product-id]');
     if (!productItem) return;
-    
-    // Don't trigger if clicking the Buy button
-    if (e.target.tagName === 'BUTTON' || e.target.closest('button')) {
-        return;
-    }
     
     const productId = productItem.getAttribute('data-product-id');
     if (productId) {
@@ -953,9 +1197,9 @@ function renderCart(cart, total) {
         }
     }
     
-    // Use calculated values or fall back to backend values
-    const finalSubtotal = subtotal > 0 ? subtotal : (total ? total - shipping : 0);
-    const finalTotal = calculatedTotal > 0 ? calculatedTotal : (total || 0);
+    // Use calculated values - if cart is empty, always use 0
+    const finalSubtotal = (!cart || cart.length === 0) ? 0 : subtotal;
+    const finalTotal = (!cart || cart.length === 0) ? 0 : calculatedTotal;
     
     if (subtotalEl) subtotalEl.textContent = finalSubtotal.toFixed(2);
     if (totalEl) totalEl.textContent = finalTotal.toFixed(2);
@@ -1372,9 +1616,31 @@ window.handleCheckout = handleCheckout;
 window.buyAgain = buyAgain;
 window.loadCart = loadCart;
 window.loadCatalog = loadCatalog;
+
+// Set up buy button handler on page load (event delegation)
+// This ensures buy buttons work everywhere, even if created dynamically
+function setupBuyButtonHandler() {
+    const catalogList = document.getElementById('catalog-list');
+    if (catalogList) {
+        // Remove existing handlers (both capture and bubble phases)
+        catalogList.removeEventListener('click', handleBuyButtonClick, true);
+        catalogList.removeEventListener('click', handleBuyButtonClick, false);
+        // Add handler using capture phase for better reliability (fires before bubble)
+        catalogList.addEventListener('click', handleBuyButtonClick, true);
+    }
+}
+
+// Set up immediately if DOM is ready, otherwise wait
+if (document.readyState === 'loading') {
+    window.addEventListener('DOMContentLoaded', setupBuyButtonHandler);
+} else {
+    setupBuyButtonHandler();
+}
+
 window.loadHistory = loadHistory;
 window.updateLoginStatus = updateLoginStatus;
-window.performSearch = window.performSearch || performSearch; // Ensure it's available globally
+// Always use the module version - it has proper race condition handling
+window.performSearch = performSearch;
 // showOrderHistory is already defined as window.showOrderHistory above
 // showProductDetails and closeProductDetails are already defined as window properties above
 
