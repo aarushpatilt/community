@@ -599,9 +599,16 @@ std::string Server::handleLogin(const std::string& body) {
             // If not found by username, try as email
             // Check if input looks like an email (contains @)
             if (username.find('@') != std::string::npos) {
-                // Search by email - iterate through users (in production, add findUserByEmail)
-                // For now, we'll need to check all users - this is inefficient but works
-                // TODO: Add findUserByEmail to MongoDBService for better performance
+                // Normalize email: trim whitespace and convert to lowercase
+                std::string normalizedEmail = username;
+                normalizedEmail.erase(0, normalizedEmail.find_first_not_of(" \t\n\r"));
+                normalizedEmail.erase(normalizedEmail.find_last_not_of(" \t\n\r") + 1);
+                std::transform(normalizedEmail.begin(), normalizedEmail.end(), normalizedEmail.begin(), ::tolower);
+                
+                // Try to find user by email
+                if (mongoService.findUserByEmail(normalizedEmail, user)) {
+                    found = true;
+                }
             }
         }
         

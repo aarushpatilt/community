@@ -11,7 +11,8 @@ const API_BASE_URL = 'http://localhost:3000/api';
 // VIEW MANAGEMENT
 // ============================================================================
 
-function showView(viewId) {
+// Make showView available immediately for inline onclick handlers
+window.showView = function showView(viewId) {
     document.querySelectorAll('.view-screen').forEach(view => {
         view.classList.remove('active');
     });
@@ -20,8 +21,15 @@ function showView(viewId) {
         view.classList.add('active');
         // Scroll to top when switching views
         window.scrollTo(0, 0);
+        
+        // Set up signup form when signup view is shown
+        if (viewId === 'signup-view') {
+            setTimeout(() => {
+                setupSignupForm();
+            }, 100);
+        }
     }
-}
+};
 
 function showLoginForm() {
     // Welcome view already has login form, just scroll to it or keep on welcome view
@@ -79,10 +87,25 @@ function updateLoginStatus() {
 }
 
 // Login form handler - handles login from welcome view
-function handleLogin(event) {
-    event.preventDefault();
-    const username = document.getElementById('login-username').value;
-    const password = document.getElementById('login-password').value;
+window.handleLogin = function handleLogin(event) {
+    console.log('handleLogin called');
+    if (event) {
+        event.preventDefault();
+    }
+    
+    const usernameEl = document.getElementById('login-username');
+    const passwordEl = document.getElementById('login-password');
+    
+    if (!usernameEl || !passwordEl) {
+        console.error('Login form elements not found');
+        showMessage('Form not ready. Please refresh the page.', 'error');
+        return;
+    }
+    
+    const username = usernameEl.value?.trim();
+    const password = passwordEl.value;
+    
+    console.log('Login attempt:', { username: username ? '***' : 'empty', hasPassword: !!password });
     
     if (!username || !password) {
         showMessage('Please enter username and password', 'error');
@@ -91,13 +114,17 @@ function handleLogin(event) {
     
     (async () => {
         try {
+            console.log('Sending login request to:', `${API_BASE_URL}/login`);
             const response = await fetch(`${API_BASE_URL}/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username, password })
             });
             
+            console.log('Login response status:', response.status);
             const result = await response.json();
+            console.log('Login response:', result);
+            
             const isSuccess = result.success === true || result.success === "true";
             
             if (!isSuccess) {
@@ -108,13 +135,22 @@ function handleLogin(event) {
                 return;
             }
             
-            if (result.token && result.user) {
-                persistSession(result.token, result.user);
+            // Handle both response formats (with user object or flat structure)
+            if (result.token) {
+                const user = result.user || {
+                    id: result.user_id || username,
+                    username: result.username || username,
+                    email: result.email || ''
+                };
+                
+                persistSession(result.token, user);
                 updateLoginStatus();
                 showMessage('Login successful!', 'success');
                 setTimeout(() => {
                     showView('store-view');
-                    initializeStore();
+                    if (typeof initializeStore === 'function') {
+                        initializeStore();
+                    }
                 }, 500);
             } else {
                 showMessage('Login failed - missing token', 'error');
@@ -124,64 +160,218 @@ function handleLogin(event) {
             showMessage('Network error. Please check the server.', 'error');
         }
     })();
-}
+};
 
 // Attach login handler to form (works for both welcome and any login views)
-const loginForm = document.getElementById('loginForm');
-if (loginForm) {
-    loginForm.addEventListener('submit', handleLogin);
-}
-
-// Signup form handler
-const signupForm = document.getElementById('signupForm');
-if (signupForm) {
-    signupForm.addEventListener('submit', async (event) => {
-        event.preventDefault();
-        const username = document.getElementById('signup-username').value;
-        const email = document.getElementById('signup-email').value;
-        const password = document.getElementById('signup-password').value;
-        const passwordConfirm = document.getElementById('signup-password-confirm').value;
-        
-        if (password !== passwordConfirm) {
-            showMessage('Passwords do not match', 'error');
+function setupLoginForm() {
+    const loginForm = document.getElementById('loginForm');
+    if (loginForm) {
+        // Check if handler is already attached
+        if (loginForm.dataset.handlerAttached === 'true') {
             return;
         }
         
-        try {
-            const response = await fetch(`${API_BASE_URL}/signup`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, email, password })
-            });
+        loginForm.addEventListener('submit', handleLogin);
+        loginForm.dataset.handlerAttached = 'true';
+    }
+}
+
+// Set up login form when DOM is ready
+setupLoginForm();
+window.addEventListener('DOMContentLoaded', () => {
+    setupLoginForm();
+});
+
+// Signup form handler - ensure it's attached when DOM is ready
+function setupSignupForm() {
+    const signupForm = document.getElementById('signupForm');
+    if (signupForm) {
+        // Check if handler is already attached to avoid duplicates
+        if (signupForm.dataset.handlerAttached === 'true') {
+            return;
+        }
+        
+        // Add form submit handler
+        signupForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            event.stopPropagation();
             
-            const result = await response.json();
-            const isSuccess = result.success === true || result.success === "true";
+            const username = document.getElementById('signup-username')?.value?.trim();
+            const email = document.getElementById('signup-email')?.value?.trim();
+            const password = document.getElementById('signup-password')?.value;
+            const passwordConfirm = document.getElementById('signup-password-confirm')?.value;
             
-            if (!isSuccess) {
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-                updateLoginStatus();
-                showMessage(result.message || 'Signup failed', 'error');
+            if (!username || !email || !password || !passwordConfirm) {
+                showMessage('Please fill in all fields', 'error');
                 return;
             }
             
-            if (result.token && result.user) {
-                persistSession(result.token, result.user);
-                updateLoginStatus();
-                showMessage('Account created successfully!', 'success');
-                setTimeout(() => {
-                    showView('store-view');
-                    initializeStore();
-                }, 500);
-            } else {
-                showMessage('Signup failed - missing token', 'error');
+            if (password !== passwordConfirm) {
+                showMessage('Passwords do not match', 'error');
+                return;
             }
-        } catch (error) {
-            console.error('Signup error:', error);
-            showMessage('Network error. Please check the server.', 'error');
+            
+            if (password.length < 6) {
+                showMessage('Password must be at least 6 characters long', 'error');
+                return;
+            }
+            
+            await submitSignupForm(username, email, password);
+        });
+        
+        // Mark as attached
+        signupForm.dataset.handlerAttached = 'true';
+        
+        // Ensure button click handler is also set up (don't clone - preserve onclick)
+        const signupButton = document.getElementById('signup-button');
+        if (signupButton && !signupButton.dataset.handlerAttached) {
+            // Add event listener in addition to onclick (for reliability)
+            signupButton.addEventListener('click', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                handleSignupButtonClick(event);
+            });
+            // Ensure onclick attribute is set
+            if (!signupButton.getAttribute('onclick')) {
+                signupButton.setAttribute('onclick', 'handleSignupButtonClick(event)');
+            }
+            signupButton.dataset.handlerAttached = 'true';
         }
-    });
+    }
 }
+
+// Handle signup button click directly - this is called from the button's onclick
+window.handleSignupButtonClick = function handleSignupButtonClick(event) {
+    console.log('Signup button clicked');
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    
+    // Get form values directly
+    const username = document.getElementById('signup-username')?.value?.trim();
+    const email = document.getElementById('signup-email')?.value?.trim();
+    const password = document.getElementById('signup-password')?.value;
+    const passwordConfirm = document.getElementById('signup-password-confirm')?.value;
+    
+    console.log('Form values:', { username, email, hasPassword: !!password, hasPasswordConfirm: !!passwordConfirm });
+    
+    // Validate
+    if (!username || !email || !password || !passwordConfirm) {
+        showMessage('Please fill in all fields', 'error');
+        return;
+    }
+    
+    if (password !== passwordConfirm) {
+        showMessage('Passwords do not match', 'error');
+        return;
+    }
+    
+    if (password.length < 6) {
+        showMessage('Password must be at least 6 characters long', 'error');
+        return;
+    }
+    
+    // Submit directly - don't rely on form submit event
+    console.log('Submitting signup form directly');
+    submitSignupForm(username, email, password);
+};
+
+// Extract signup submission logic to reusable function - make it available globally
+window.submitSignupForm = async function submitSignupForm(username, email, password) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/signup`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, email, password })
+        });
+        
+        const result = await response.json();
+        const isSuccess = result.success === true || result.success === "true";
+        
+        if (!isSuccess) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            updateLoginStatus();
+            showMessage(result.message || 'Signup failed', 'error');
+            return;
+        }
+        
+        if (result.token && result.user) {
+            persistSession(result.token, result.user);
+            updateLoginStatus();
+            showMessage('Account created successfully!', 'success');
+            setTimeout(() => {
+                showView('store-view');
+                initializeStore();
+            }, 500);
+        } else {
+            showMessage('Signup failed - missing token', 'error');
+        }
+    } catch (error) {
+        console.error('Signup error:', error);
+        showMessage('Network error. Please check the server.', 'error');
+    }
+}
+
+// Update setupSignupForm to use the extracted function
+function setupSignupForm() {
+    const signupForm = document.getElementById('signupForm');
+    if (signupForm) {
+        // Check if handler is already attached
+        if (signupForm.dataset.handlerAttached === 'true') {
+            return; // Already set up
+        }
+        
+        signupForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            
+            const username = document.getElementById('signup-username')?.value?.trim();
+            const email = document.getElementById('signup-email')?.value?.trim();
+            const password = document.getElementById('signup-password')?.value;
+            const passwordConfirm = document.getElementById('signup-password-confirm')?.value;
+            
+            if (!username || !email || !password || !passwordConfirm) {
+                showMessage('Please fill in all fields', 'error');
+                return;
+            }
+            
+            if (password !== passwordConfirm) {
+                showMessage('Passwords do not match', 'error');
+                return;
+            }
+            
+            if (password.length < 6) {
+                showMessage('Password must be at least 6 characters long', 'error');
+                return;
+            }
+            
+            await submitSignupForm(username, email, password);
+        });
+        
+        // Mark as attached
+        signupForm.dataset.handlerAttached = 'true';
+        
+        // Also set up button click handler
+        const signupButton = document.getElementById('signup-button');
+        if (signupButton && !signupButton.dataset.handlerAttached) {
+            signupButton.addEventListener('click', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                handleSignupButtonClick(event);
+            });
+            signupButton.dataset.handlerAttached = 'true';
+        }
+    }
+}
+
+// Set up signup form when DOM is ready
+setupSignupForm();
+// Also set up when signup view is shown (in case form is dynamically loaded)
+window.addEventListener('DOMContentLoaded', () => {
+    setupSignupForm();
+});
 
 // ============================================================================
 // STORE FUNCTIONALITY
@@ -336,10 +526,9 @@ function initializeStore() {
         console.log('Setting up search handlers:', { form: !!form, input: !!input, searchButton: !!searchButton, performSearch: typeof performSearch });
         
         if (form && input) {
-            // Remove any existing listeners by cloning
-            const newForm = form.cloneNode(true);
-            form.parentNode.replaceChild(newForm, form);
-            const newInput = document.getElementById('catalog-search');
+            // Don't clone the form - it removes inline handlers
+            // Instead, just attach event listeners
+            const newInput = input;
             
             // Form submit handler - add both inline and event listener
             const formRef = document.getElementById('search-form');
@@ -397,16 +586,16 @@ function initializeStore() {
             }
         }
         
-        // Search button click handler - override inline onclick
+        // Search button click handler - add event listener in addition to onclick (don't remove onclick)
         if (searchButton) {
-            // Remove existing onclick
-            searchButton.removeAttribute('onclick');
+            // Don't remove onclick - keep it for immediate functionality
+            // Just add event listener as backup
             searchButton.addEventListener('click', (event) => {
                 event.preventDefault();
                 event.stopPropagation();
                 const input = document.getElementById('catalog-search');
                 const query = input ? input.value.trim() : '';
-                console.log('Search button clicked - query:', query);
+                console.log('Search button clicked (event listener) - query:', query);
                 if (query) {
                     const startText = document.getElementById('start-search-text');
                     if (startText) startText.style.display = 'none';
@@ -470,7 +659,7 @@ function renderSearchResults(results) {
                 <p style="margin: 0 0 10px 0; color: rgba(0,0,0,0.5); font-family: Inter, sans-serif; font-size: 32px;">${item.description || 'Item description.'}</p>
                 <p style="margin: 0; font-weight: bold; color: rgba(0,0,0,1); font-family: Inter, sans-serif; font-size: 32px;">$${item.price ? item.price.toFixed(2) : 'Price'}</p>
             </div>
-            <button onclick="event.stopPropagation(); addToCart('${item.id}')" style="width: 133px; height: 100px; background: rgba(22,79,27,1); color: white; border: none; border-radius: 20px; cursor: pointer; font-family: Inter, sans-serif; font-size: 32px; margin-left: 20px;">Buy</button>
+            <button onclick="event.stopPropagation(); if(window.addToCart) window.addToCart('${String(item.id).replace(/'/g, "\\'")}')" style="width: 133px; height: 100px; background: rgba(22,79,27,1); color: white; border: none; border-radius: 20px; cursor: pointer; font-family: Inter, sans-serif; font-size: 32px; margin-left: 20px;">Buy</button>
         </div>
     `).join('');
     
@@ -613,7 +802,11 @@ window.showProductDetails = function showProductDetails(productId) {
         addBtn.addEventListener('click', () => {
             const productId = addBtn.getAttribute('data-product-id');
             if (productId) {
-                addToCart(productId);
+                if (window.addToCart && typeof window.addToCart === 'function') {
+                    window.addToCart(productId);
+                } else if (typeof addToCart === 'function') {
+                    addToCart(productId);
+                }
                 window.closeProductDetails();
             }
         });
@@ -634,23 +827,27 @@ window.closeProductDetails = function closeProductDetails() {
 // closeProductDetails is now defined as window.closeProductDetails above
 
 // Sample products for testing - shared constant (make it globally accessible)
-window.SAMPLE_PRODUCTS = [
-    { id: '1', name: 'Laptop Pro 15', description: 'High-performance laptop with 16GB RAM and SSD', price: 1299.99 },
-    { id: '2', name: 'Wireless Mouse', description: 'Ergonomic wireless mouse with long battery life', price: 29.99 },
-    { id: '3', name: 'Mechanical Keyboard', description: 'RGB backlit mechanical keyboard with blue switches', price: 89.99 },
-    { id: '4', name: 'USB-C Hub', description: '7-in-1 USB-C hub with HDMI and SD card reader', price: 49.99 },
-    { id: '5', name: 'Monitor Stand', description: 'Adjustable monitor stand with cable management', price: 39.99 },
-    { id: '6', name: 'Webcam HD', description: '1080p HD webcam with built-in microphone', price: 79.99 },
-    { id: '7', name: 'Laptop Stand', description: 'Aluminum laptop stand for better ergonomics', price: 59.99 },
-    { id: '8', name: 'USB-C Cable', description: '6ft USB-C to USB-C charging cable', price: 19.99 },
-    { id: '9', name: 'Gaming Headset', description: 'Wireless gaming headset with surround sound', price: 149.99 },
-    { id: '10', name: 'External Hard Drive', description: '2TB portable external hard drive', price: 89.99 },
-    { id: '11', name: 'Wireless Charger', description: 'Fast wireless charging pad for phones', price: 34.99 },
-    { id: '12', name: 'Laptop Sleeve', description: 'Protective laptop sleeve with padding', price: 24.99 },
-    { id: '13', name: 'HDMI Cable', description: '10ft high-speed HDMI 2.0 cable', price: 14.99 },
-    { id: '14', name: 'Desk Lamp', description: 'LED desk lamp with adjustable brightness', price: 44.99 },
-    { id: '15', name: 'Mouse Pad', description: 'Large gaming mouse pad with RGB lighting', price: 29.99 }
-];
+// Use backend-compatible product IDs (ITEM001, ITEM002, etc.)
+// Only update if not already set (inline script may have set it)
+if (!window.SAMPLE_PRODUCTS || window.SAMPLE_PRODUCTS.length === 0) {
+    window.SAMPLE_PRODUCTS = [
+        { id: 'ITEM001', name: 'Laptop Pro 15', description: 'High-performance laptop with 16GB RAM and SSD', price: 999.99 },
+        { id: 'ITEM002', name: 'Wireless Mouse', description: 'Ergonomic wireless mouse with long battery life', price: 29.99 },
+        { id: 'ITEM003', name: 'Mechanical Keyboard', description: 'RGB backlit mechanical keyboard with blue switches', price: 79.99 },
+        { id: 'ITEM004', name: '4K Monitor', description: 'Ultra sharp IPS panel with 95% DCI-P3 coverage', price: 299.99 },
+        { id: 'ITEM005', name: 'USB-C Hub', description: '7-in-1 USB-C hub with HDMI and SD card reader', price: 49.99 },
+        { id: 'ITEM006', name: 'Monitor Stand', description: 'Adjustable monitor stand with cable management', price: 39.99 },
+        { id: 'ITEM007', name: 'Webcam HD', description: '1080p HD webcam with built-in microphone', price: 79.99 },
+        { id: 'ITEM008', name: 'Laptop Stand', description: 'Aluminum laptop stand for better ergonomics', price: 59.99 },
+        { id: 'ITEM009', name: 'USB-C Cable', description: '6ft USB-C to USB-C charging cable', price: 19.99 },
+        { id: 'ITEM010', name: 'Gaming Headset', description: 'Wireless gaming headset with surround sound', price: 149.99 },
+        { id: 'ITEM011', name: 'External Hard Drive', description: '2TB portable external hard drive', price: 89.99 },
+        { id: 'ITEM012', name: 'Wireless Charger', description: 'Fast wireless charging pad for phones', price: 34.99 },
+        { id: 'ITEM013', name: 'Laptop Sleeve', description: 'Protective laptop sleeve with padding', price: 24.99 },
+        { id: 'ITEM014', name: 'HDMI Cable', description: '10ft high-speed HDMI 2.0 cable', price: 14.99 },
+        { id: 'ITEM015', name: 'Mouse Pad', description: 'Large gaming mouse pad with RGB lighting', price: 29.99 }
+    ];
+}
 
 async function loadCatalog() {
     const catalogList = document.getElementById('catalog-list');
@@ -749,7 +946,7 @@ function renderCart(cart, total) {
                             <p style="margin: 0 0 10px 0; color: rgba(0,0,0,0.5); font-family: Inter, sans-serif; font-size: 32px;">${item.description || 'Item description.'}</p>
                             <p style="margin: 0; font-weight: bold; color: rgba(0,0,0,1); font-family: Inter, sans-serif; font-size: 32px;">$${itemTotal.toFixed(2)}</p>
                         </div>
-                        <button onclick="removeFromCart('${item.productId}')" style="width: 186px; height: 100px; background: rgba(217,217,217,1); color: rgba(0,0,0,1); border: none; border-radius: 20px; cursor: pointer; font-family: Inter, sans-serif; font-size: 32px; margin-left: 20px;">Remove</button>
+                        <button onclick="if(window.removeFromCart) window.removeFromCart('${String(item.productId).replace(/'/g, "\\'")}')" style="width: 186px; height: 100px; background: rgba(217,217,217,1); color: rgba(0,0,0,1); border: none; border-radius: 20px; cursor: pointer; font-family: Inter, sans-serif; font-size: 32px; margin-left: 20px;">Remove</button>
                     </div>
                 `;
             }).join('');
@@ -769,6 +966,12 @@ async function loadHistory() {
     const token = localStorage.getItem('token');
     if (!token) return;
     
+    // When loading history, hide thank you message and show history
+    const thankYouText = document.querySelector('#history-view .v1_187');
+    if (thankYouText) {
+        thankYouText.style.display = 'none';
+    }
+    
     try {
         const response = await fetch(`${API_BASE_URL}/purchase-history`, {
             headers: { 'Authorization': `Bearer ${token}` }
@@ -786,6 +989,24 @@ function renderHistory(history) {
     const historyList = document.getElementById('history-list');
     if (!historyList) return;
     
+    // Show the history list and "Order History" text (they might have been hidden on thank you page)
+    historyList.style.display = 'block';
+    const orderHistoryText = document.querySelector('#history-view .v1_179');
+    const orderHistoryButton = document.getElementById('order-history-button');
+    const historyView = document.getElementById('history-view');
+    
+    if (orderHistoryText) {
+        orderHistoryText.style.display = 'block';
+    }
+    // Hide Order History button when showing actual history
+    if (orderHistoryButton) {
+        orderHistoryButton.style.display = 'none';
+    }
+    // Add class to indicate we're showing history
+    if (historyView) {
+        historyView.classList.add('showing-history');
+    }
+    
     if (!history || history.length === 0) {
         historyList.innerHTML = '<p style="color: rgba(0,0,0,0.5); font-family: Inter, sans-serif; font-size: 32px;">No purchase history</p>';
         return;
@@ -798,13 +1019,13 @@ function renderHistory(history) {
             // If no items, show order summary
             const date = order.purchasedAt ? new Date(order.purchasedAt).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' }) : 'Unknown date';
             return [`
-                <div class="v1_200" style="position: relative; width: 100%; height: 150px; margin-bottom: 20px; background: rgba(255,255,255,0.9); border-radius: 10px; display: flex; align-items: center; padding: 20px;">
-                    <div style="width: 150px; height: 150px; background: rgba(217,217,217,1); border-radius: 5px; margin-right: 20px; display: flex; align-items: center; justify-content: center; color: rgba(0,0,0,1); font-family: Inter, sans-serif; font-size: 32px;">Image</div>
-                    <div style="flex: 1;">
-                        <h4 style="margin: 0 0 10px 0; font-family: Inter, sans-serif; font-size: 32px; color: rgba(0,0,0,1);">Order ${order.orderId || 'Item One'}</h4>
-                        <p style="margin: 0 0 10px 0; color: rgba(0,0,0,0.5); font-family: Inter, sans-serif; font-size: 32px;">Item description.</p>
-                        <p style="margin: 0; font-weight: bold; color: rgba(0,0,0,1); font-family: Inter, sans-serif; font-size: 32px;">$${(order.total || 0).toFixed(2)}</p>
-                        <p style="margin: 5px 0 0 0; color: rgba(0,0,0,1); font-family: Inter, sans-serif; font-size: 32px;">${date}</p>
+                <div class="v1_200" style="position: relative; width: 100%; min-height: 150px; margin-bottom: 20px; background: rgba(255,255,255,0.9); border-radius: 10px; display: flex; align-items: center; padding: 20px; overflow: visible;">
+                    <div style="width: 150px; height: 150px; min-width: 150px; background: rgba(217,217,217,1); border-radius: 5px; margin-right: 20px; display: flex; align-items: center; justify-content: center; color: rgba(0,0,0,1); font-family: Inter, sans-serif; font-size: 32px; flex-shrink: 0;">Image</div>
+                    <div style="flex: 1; min-width: 0; overflow: visible;">
+                        <h4 style="margin: 0 0 10px 0; font-family: Inter, sans-serif; font-size: 32px; color: rgba(0,0,0,1); word-wrap: break-word; overflow-wrap: break-word;">Order ${order.orderId || 'Item One'}</h4>
+                        <p style="margin: 0 0 10px 0; color: rgba(0,0,0,0.5); font-family: Inter, sans-serif; font-size: 32px; word-wrap: break-word; overflow-wrap: break-word;">Item description.</p>
+                        <p style="margin: 0; font-weight: bold; color: rgba(0,0,0,1); font-family: Inter, sans-serif; font-size: 32px; white-space: nowrap;">$${(order.total || 0).toFixed(2)}</p>
+                        <p style="margin: 5px 0 0 0; color: rgba(0,0,0,1); font-family: Inter, sans-serif; font-size: 32px; white-space: nowrap;">${date}</p>
                     </div>
                 </div>
             `];
@@ -815,13 +1036,13 @@ function renderHistory(history) {
             const itemClasses = ['v1_200', 'v1_210', 'v1_220'];
             const itemClass = itemClasses[itemIndex % itemClasses.length];
             return `
-                <div class="${itemClass}" style="position: relative; width: 100%; height: 150px; margin-bottom: 20px; background: rgba(255,255,255,0.9); border-radius: 10px; display: flex; align-items: center; padding: 20px;">
-                    <div style="width: 150px; height: 150px; background: rgba(217,217,217,1); border-radius: 5px; margin-right: 20px; display: flex; align-items: center; justify-content: center; color: rgba(0,0,0,1); font-family: Inter, sans-serif; font-size: 32px;">Image</div>
-                    <div style="flex: 1;">
-                        <h4 style="margin: 0 0 10px 0; font-family: Inter, sans-serif; font-size: 32px; color: rgba(0,0,0,1);">${item.name || 'Item One'}</h4>
-                        <p style="margin: 0 0 10px 0; color: rgba(0,0,0,0.5); font-family: Inter, sans-serif; font-size: 32px;">${item.description || 'Item description.'}</p>
-                        <p style="margin: 0; font-weight: bold; color: rgba(0,0,0,1); font-family: Inter, sans-serif; font-size: 32px;">$${(item.subtotal || item.price * item.quantity || 0).toFixed(2)}</p>
-                        <p style="margin: 5px 0 0 0; color: rgba(0,0,0,1); font-family: Inter, sans-serif; font-size: 32px;">${date}</p>
+                <div class="${itemClass}" style="position: relative; width: 100%; min-height: 150px; margin-bottom: 20px; background: rgba(255,255,255,0.9); border-radius: 10px; display: flex; align-items: center; padding: 20px; overflow: visible;">
+                    <div style="width: 150px; height: 150px; min-width: 150px; background: rgba(217,217,217,1); border-radius: 5px; margin-right: 20px; display: flex; align-items: center; justify-content: center; color: rgba(0,0,0,1); font-family: Inter, sans-serif; font-size: 32px; flex-shrink: 0;">Image</div>
+                    <div style="flex: 1; min-width: 0; overflow: visible;">
+                        <h4 style="margin: 0 0 10px 0; font-family: Inter, sans-serif; font-size: 32px; color: rgba(0,0,0,1); word-wrap: break-word; overflow-wrap: break-word;">${item.name || 'Item One'}</h4>
+                        <p style="margin: 0 0 10px 0; color: rgba(0,0,0,0.5); font-family: Inter, sans-serif; font-size: 32px; word-wrap: break-word; overflow-wrap: break-word;">${item.description || 'Item description.'}</p>
+                        <p style="margin: 0; font-weight: bold; color: rgba(0,0,0,1); font-family: Inter, sans-serif; font-size: 32px; white-space: nowrap;">$${(item.subtotal || item.price * item.quantity || 0).toFixed(2)}</p>
+                        <p style="margin: 5px 0 0 0; color: rgba(0,0,0,1); font-family: Inter, sans-serif; font-size: 32px; white-space: nowrap;">${date}</p>
                     </div>
                 </div>
             `;
@@ -848,8 +1069,12 @@ async function addToCart(productId) {
         const data = await response.json();
         if (data.success) {
             showMessage('Item added to cart', 'success');
-            loadCart();
+            // Navigate to cart view first, then load cart
             showView('cart-view');
+            // Small delay to ensure view is visible before rendering
+            setTimeout(() => {
+                loadCart();
+            }, 100);
         } else {
             showMessage(data.message || 'Failed to add item', 'error');
         }
@@ -885,14 +1110,65 @@ async function handleCheckout() {
         return;
     }
     
-    const cardNumber = document.getElementById('card-number').value;
-    const cardExpiry = document.getElementById('card-expiry').value;
-    const cardCvv = document.getElementById('card-cvv').value;
-    const cardName = document.getElementById('card-name').value;
-    const address = document.getElementById('ship-address').value;
+    const cardNumber = document.getElementById('card-number').value.trim();
+    const cardExpiry = document.getElementById('card-expiry').value.trim();
+    const cardCvv = document.getElementById('card-cvv').value.trim();
+    const cardName = document.getElementById('card-name').value.trim();
+    const address = document.getElementById('ship-address').value.trim();
     
+    // Validate all fields are filled
     if (!cardNumber || !cardExpiry || !cardCvv || !cardName || !address) {
         showMessage('Please fill in all payment fields', 'error');
+        return;
+    }
+    
+    // Validate card number: must be 16 digits (remove spaces first)
+    const cardNumberDigits = cardNumber.replace(/\s+/g, '');
+    if (!/^\d{16}$/.test(cardNumberDigits)) {
+        showMessage('Card number must be exactly 16 digits', 'error');
+        return;
+    }
+    
+    // Validate expiration date: must be in MM/YY format and not expired
+    const expiryMatch = cardExpiry.match(/^(\d{2})\/(\d{2})$/);
+    if (!expiryMatch) {
+        showMessage('Expiration date must be in MM/YY format (e.g., 12/25)', 'error');
+        return;
+    }
+    
+    const month = parseInt(expiryMatch[1], 10);
+    const year = parseInt(expiryMatch[2], 10);
+    
+    if (month < 1 || month > 12) {
+        showMessage('Invalid month. Month must be between 01 and 12', 'error');
+        return;
+    }
+    
+    // Check if card is expired
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear() % 100; // Get last 2 digits
+    const currentMonth = currentDate.getMonth() + 1; // getMonth() returns 0-11
+    
+    if (year < currentYear || (year === currentYear && month < currentMonth)) {
+        showMessage('Card has expired. Please use a valid expiration date', 'error');
+        return;
+    }
+    
+    // Validate CVV: must be 3 or 4 digits
+    if (!/^\d{3,4}$/.test(cardCvv)) {
+        showMessage('Security code must be 3 or 4 digits', 'error');
+        return;
+    }
+    
+    // Validate cardholder name: must not be empty and should contain at least letters
+    if (cardName.length < 2 || !/^[a-zA-Z\s'-]+$/.test(cardName)) {
+        showMessage('Cardholder name must contain at least 2 letters', 'error');
+        return;
+    }
+    
+    // Validate address: must not be empty
+    if (address.length < 5) {
+        showMessage('Please enter a valid shipping address', 'error');
         return;
     }
     
@@ -914,7 +1190,7 @@ async function handleCheckout() {
                 },
                 paymentMethod: {
                     cardholderName: cardName,
-                    cardNumber: cardNumber.replace(/\s+/g, ''),
+                    cardNumber: cardNumberDigits,
                     cardExpiry: cardExpiry,
                     cardCvv: cardCvv,
                     billingZip: ''
@@ -925,10 +1201,30 @@ async function handleCheckout() {
         if (data.success) {
             showMessage('Checkout successful!', 'success');
             loadCart();
-            loadHistory();
+            // Don't load history - we want to show thank you page without order history
             // Show confirmation screen (history view with "Confirmed. Thank you!" message)
             setTimeout(() => {
                 showView('history-view');
+                // Hide the history list and "Order History" text on thank you page
+                const historyList = document.getElementById('history-list');
+                const orderHistoryText = document.querySelector('#history-view .v1_179');
+                const orderHistoryButton = document.getElementById('order-history-button');
+                const historyView = document.getElementById('history-view');
+                
+                if (historyList) {
+                    historyList.style.display = 'none';
+                }
+                if (orderHistoryText) {
+                    orderHistoryText.style.display = 'none';
+                }
+                // Show Order History button on thank you page
+                if (orderHistoryButton) {
+                    orderHistoryButton.style.display = 'flex';
+                }
+                // Remove showing-history class to indicate we're on thank you page
+                if (historyView) {
+                    historyView.classList.remove('showing-history');
+                }
             }, 500);
         } else {
             showMessage(data.message || 'Checkout failed', 'error');
@@ -948,12 +1244,23 @@ window.addEventListener('DOMContentLoaded', () => {
     const userStr = localStorage.getItem('user');
     
     updateLoginStatus();
+    
+    // Only redirect if we're not already on a different view
+    // This prevents redirecting away from store-view if user just logged in
+    const currentView = document.querySelector('.view-screen.active');
+    const currentViewId = currentView ? currentView.id : null;
+    
     if (token && userStr) {
-        showView('store-view');
-        initializeStore();
+        // If already on store-view or another view, don't change it
+        if (!currentViewId || currentViewId === 'welcome-view') {
+            showView('store-view');
+            initializeStore();
+        }
     } else {
-        // Show welcome page first (not login)
-        showView('welcome-view');
+        // Only show welcome if we're not already on a different view
+        if (!currentViewId || currentViewId === 'welcome-view') {
+            showView('welcome-view');
+        }
     }
 });
 
@@ -1024,9 +1331,40 @@ function buyAgain(productId) {
     }, 100);
 }
 
-// Make functions available globally
-window.showView = showView;
+// Function to show order history from thank you page
+window.showOrderHistory = function showOrderHistory() {
+    const historyView = document.getElementById('history-view');
+    const orderHistoryButton = document.getElementById('order-history-button');
+    const orderHistoryText = document.querySelector('#history-view .v1_179');
+    
+    // Hide the thank you message
+    const thankYouText = document.querySelector('#history-view .v1_187');
+    if (thankYouText) {
+        thankYouText.style.display = 'none';
+    }
+    
+    // Hide the Order History button
+    if (orderHistoryButton) {
+        orderHistoryButton.style.display = 'none';
+    }
+    
+    // Show Order History text
+    if (orderHistoryText) {
+        orderHistoryText.style.display = 'block';
+    }
+    
+    // Load and show order history
+    loadHistory();
+    
+    // Add class to indicate we're showing history
+    if (historyView) {
+        historyView.classList.add('showing-history');
+    }
+};
+
+// Make functions available globally (showView is already assigned to window above)
 window.showLoginForm = showLoginForm;
+// Use module's logout (it has updateLoginStatus which is important)
 window.logout = logout;
 window.addToCart = addToCart;
 window.removeFromCart = removeFromCart;
@@ -1037,5 +1375,6 @@ window.loadCatalog = loadCatalog;
 window.loadHistory = loadHistory;
 window.updateLoginStatus = updateLoginStatus;
 window.performSearch = window.performSearch || performSearch; // Ensure it's available globally
+// showOrderHistory is already defined as window.showOrderHistory above
 // showProductDetails and closeProductDetails are already defined as window properties above
 

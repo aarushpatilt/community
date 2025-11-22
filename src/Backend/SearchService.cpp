@@ -7,13 +7,23 @@
 #include <algorithm>
 #include <cctype>
 
-// Static catalog definition (matches routes/search.js)
+// Static catalog definition (matches frontend SAMPLE_PRODUCTS)
 const CatalogItem SearchService::CATALOG[] = {
-    CatalogItem("ITEM001", "Laptop Pro 15\"", 999.99, "Powerful performance for everyday work and gaming."),
-    CatalogItem("ITEM002", "Wireless Mouse", 29.99, "Ergonomic travel-friendly wireless mouse."),
-    CatalogItem("ITEM003", "Mechanical Keyboard", 79.99, "Hot-swappable switches with per-key RGB lighting."),
-    CatalogItem("ITEM004", "4K Monitor", 299.99, "Ultra sharp IPS panel with 95% DCI-P3 coverage."),
-    CatalogItem("ITEM005", "USB-C Hub", 49.99, "Seven essential ports with 100W passthrough charging.")
+    CatalogItem("ITEM001", "Laptop Pro 15", 999.99, "High-performance laptop with 16GB RAM and SSD"),
+    CatalogItem("ITEM002", "Wireless Mouse", 29.99, "Ergonomic wireless mouse with long battery life"),
+    CatalogItem("ITEM003", "Mechanical Keyboard", 79.99, "RGB backlit mechanical keyboard with blue switches"),
+    CatalogItem("ITEM004", "4K Monitor", 299.99, "Ultra sharp IPS panel with 95% DCI-P3 coverage"),
+    CatalogItem("ITEM005", "USB-C Hub", 49.99, "7-in-1 USB-C hub with HDMI and SD card reader"),
+    CatalogItem("ITEM006", "Monitor Stand", 39.99, "Adjustable monitor stand with cable management"),
+    CatalogItem("ITEM007", "Webcam HD", 79.99, "1080p HD webcam with built-in microphone"),
+    CatalogItem("ITEM008", "Laptop Stand", 59.99, "Aluminum laptop stand for better ergonomics"),
+    CatalogItem("ITEM009", "USB-C Cable", 19.99, "6ft USB-C to USB-C charging cable"),
+    CatalogItem("ITEM010", "Gaming Headset", 149.99, "Wireless gaming headset with surround sound"),
+    CatalogItem("ITEM011", "External Hard Drive", 89.99, "2TB portable external hard drive"),
+    CatalogItem("ITEM012", "Wireless Charger", 34.99, "Fast wireless charging pad for phones"),
+    CatalogItem("ITEM013", "Laptop Sleeve", 24.99, "Protective laptop sleeve with padding"),
+    CatalogItem("ITEM014", "HDMI Cable", 14.99, "10ft high-speed HDMI 2.0 cable"),
+    CatalogItem("ITEM015", "Mouse Pad", 29.99, "Large gaming mouse pad with RGB lighting")
 };
 
 const size_t SearchService::CATALOG_SIZE = sizeof(CATALOG) / sizeof(CATALOG[0]);
