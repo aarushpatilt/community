@@ -1,45 +1,53 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
-# dependencies
-/node_modules
-/.pnp
-.pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/versions
-
-# testing
-/coverage
-
-# next.js
-/.next/
-/out/
-
-# production
-/build
-
-# misc
-.DS_Store
-*.pem
-
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-
-# env files (can opt-in for committing if needed)
-.env*
-
-# vercel
-.vercel
-
-# typescript
-*.tsbuildinfo
-next-env.d.ts
-
-# compiled executables
+# Build outputs
 *.exe
+*.o
 *.obj
+*.dll
+*.lib
+*.a
+*.so
+*.dylib
+
+# Test executables and build artifacts
+tests/*.exe
+tests/*.log
+tests/compile_*.log
+tests/*_output.txt
+tests/*_error.txt
+
+# Log files
+*.log
+*.txt
+!README.txt
+!CMakeLists.txt
+!mongodb_config.txt
+!QUICK_START.md
+!HOW_TO_START.md
+
+# Temporary files
+*_trace.txt
+*_output.txt
+*_error.txt
+*_err.txt
+*_out.txt
+server_*.txt
+compile_*.txt
+build_*.txt
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# MongoDB config (contains passwords)
+# mongodb_config.txt
+# Note: Keeping config file in repo for now, but should be gitignored in production
+
+# Test executables
+tests/*.exe

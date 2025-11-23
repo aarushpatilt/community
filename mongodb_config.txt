@@ -1,0 +1,8 @@
+# MongoDB Configuration
+# Replace <db_password> with your actual MongoDB Atlas password
+
+# MongoDB Atlas Connection String (Cloud)
+MONGODB_CONNECTION_STRING=mongodb+srv://test123:test123@cluster0.ooqfbmp.mongodb.net/
+
+# Database name
+MONGODB_DATABASE_NAME=community_store

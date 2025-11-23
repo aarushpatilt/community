@@ -1,0 +1,2520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lucrum - Community Store</title>
+    <link href="https://fonts.googleapis.com/css?family=Inter&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css?family=Inria+Serif&display=swap" rel="stylesheet" />
+    <link href="./figma-to-html-4/css/main.css" rel="stylesheet" />
+    <style>
+        /* View management - show/hide different screens */
+        * {
+            box-sizing: border-box;
+        }
+        
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow-x: hidden;
+            overflow-y: auto; /* Only scrollbar on body */
+        }
+        
+        .view-screen {
+            display: none;
+            width: 100%;
+            min-height: 100vh;
+            position: relative;
+            overflow: visible; /* Changed from hidden to visible */
+        }
+        
+        .view-screen.active {
+            display: block;
+        }
+        
+        /* Fix viewport - remove extra white space, full width */
+        .view-screen {
+            width: 100vw !important;
+            min-height: 100vh; /* Changed from height: 100vh to min-height */
+            height: auto !important; /* Allow content to determine height - no extra space */
+            overflow-x: hidden !important;
+            overflow-y: visible !important; /* Changed from auto to visible - no scrollbar here */
+            position: relative; /* Changed from fixed to relative */
+            top: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            margin: 0 !important;
+            padding: 0 !important;
+            padding-bottom: 0 !important; /* Remove extra bottom padding */
+        }
+        
+        /* Ensure body and html are full width */
+        html, body {
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow-x: hidden !important;
+            overflow-y: auto !important; /* Only scrollbar here */
+        }
+        
+        /* Scale Figma design to fit viewport - full width for all screens */
+        .view-screen .v3_2 {
+            width: 100%;
+            min-height: 100vh;
+            height: auto !important; /* Allow content to determine height */
+            position: relative;
+            margin: 0;
+            overflow-x: hidden !important;
+            overflow-y: visible !important; /* Changed from auto to visible - no scrollbar here */
+            background: white;
+            padding-bottom: 0 !important; /* Remove extra padding */
+        }
+        
+        /* Prevent extra scroll space - only show content height */
+        .view-screen.active {
+            height: auto !important;
+            max-height: none !important;
+        }
+        
+        /* Make sure containers only take up needed space */
+        .view-screen .v3_2 > div {
+            height: auto !important;
+            min-height: 100vh !important;
+            max-height: none !important;
+            padding-bottom: 0 !important;
+            margin-bottom: 0 !important;
+        }
+        
+        /* Make all views full width */
+        .view-screen {
+            width: 100vw !important;
+        }
+        
+        @media (max-width: 1024px) {
+            .figma-input {
+                font-size: 24px !important;
+            }
+            
+            .v1_12, .v1_14, .v1_27, .v1_28, .v1_29, .v1_30, .v1_31 {
+                width: calc(100% - 60px) !important;
+            }
+            
+            #signup-view .v1_25 {
+                width: calc(100% - 60px) !important;
+                padding: 20px 30px !important;
+            }
+            
+            .v1_10 {
+                width: calc(100% - 40px) !important;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .figma-input {
+                font-size: 20px !important;
+            }
+            
+            .input-label {
+                font-size: 18px !important;
+            }
+            
+            .v1_12, .v1_14, .v1_27, .v1_28, .v1_29, .v1_30, .v1_31 {
+                width: calc(100% - 60px) !important;
+                height: 80px !important;
+            }
+            
+            #signup-view .v1_25 {
+                width: calc(100% - 60px) !important;
+                padding: 15px 25px !important;
+            }
+            
+            #signup-view .figma-input {
+                padding: 0 25px !important;
+            }
+            
+            .v1_10 {
+                width: calc(100% - 40px) !important;
+            }
+            
+            .v1_11 {
+                border-radius: 20px !important;
+            }
+            
+            .v1_16 {
+                width: 200px !important;
+                height: 55px !important;
+            }
+            
+            #store-view .v1_62 {
+                width: calc(100% - 40px) !important;
+                height: 80px !important;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .v1_12, .v1_14, .v1_27, .v1_28, .v1_29, .v1_30, .v1_31 {
+                width: calc(100% - 40px) !important;
+                height: 70px !important;
+            }
+            
+            #signup-view .v1_25 {
+                width: calc(100% - 40px) !important;
+                padding: 15px 20px !important;
+            }
+            
+            #signup-view .figma-input {
+                padding: 0 20px !important;
+            }
+            
+            .v1_10 {
+                width: calc(100% - 20px) !important;
+            }
+            
+            .v1_16 {
+                width: 180px !important;
+                height: 50px !important;
+            }
+            
+            .figma-input {
+                font-size: 18px !important;
+            }
+        }
+        
+        /* Fix signup view positioning - override Figma absolute positioning (left: 1690px) */
+        #signup-view .v1_21 {
+            position: relative !important;
+            width: 100% !important;
+            height: 100vh !important;
+            min-height: 100vh !important;
+            left: 0 !important;
+            top: 0 !important;
+            overflow-y: auto !important;
+            background: rgba(255,255,255,1) !important;
+        }
+        
+        /* Make sure signup view header is visible */
+        #signup-view .v1_22 {
+            position: relative !important;
+            top: 0 !important;
+            left: 0 !important;
+        }
+        
+        
+        /* Fix all view containers to fit viewport and remove absolute positioning offsets */
+        #welcome-view .v1_2,
+        #login-view .v1_2 {
+            position: relative !important;
+            width: 100% !important;
+            height: 100vh !important;
+            left: 0 !important;
+            top: 0 !important;
+            overflow-y: auto !important;
+        }
+        
+        #store-view .v1_51 {
+            position: relative !important;
+            width: 100% !important;
+            min-height: 100vh !important; /* Changed from height to min-height */
+            left: 0 !important;
+            top: 0 !important;
+            overflow-y: visible !important; /* Changed from auto to visible - no scrollbar here */
+        }
+        
+        #cart-view .v1_67 {
+            position: relative !important;
+            width: 100% !important;
+            min-height: 100vh !important; /* Changed from height to min-height */
+            left: 0 !important;
+            top: 0 !important;
+            overflow-y: visible !important; /* Changed from auto to visible - no scrollbar here */
+        }
+        
+        #history-view .v1_175 {
+            position: relative !important;
+            width: 100% !important;
+            min-height: 100vh !important; /* Changed from height to min-height */
+            left: 0 !important;
+            top: 0 !important;
+            overflow-y: visible !important; /* Changed from auto to visible - no scrollbar here */
+            overflow-x: hidden !important;
+        }
+        
+        /* Ensure history list items are not cut off */
+        #history-view #history-list {
+            overflow: visible !important;
+            min-height: 200px !important;
+            padding-bottom: 50px !important;
+        }
+        
+        #history-view #history-list > div {
+            overflow: visible !important;
+            width: 100% !important;
+            max-width: 100% !important;
+        }
+        
+        /* Override Figma fixed heights to use viewport - allow content to grow but no extra space */
+        .v1_2, .v1_21, .v1_51, .v1_67, .v1_175 {
+            min-height: 100vh !important;
+            height: auto !important; /* Changed from 100vh to auto to allow content to grow */
+            max-height: none !important;
+            padding-bottom: 0 !important;
+            margin-bottom: 0 !important;
+        }
+        
+        /* Fix signup view - v1_21 is positioned at left: 1690px and top: 484px in Figma, need to reset */
+        #signup-view .v1_21 {
+            left: 0 !important;
+            top: 0 !important;
+            position: relative !important;
+        }
+        
+        /* Ensure signup form container uses original Figma position */
+        #signup-view .v1_25 {
+            position: absolute !important;
+            width: 970px !important;
+            height: 884px !important;
+            top: 230px !important;
+            left: 283px !important;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+        
+        /* Ensure signup title is visible and centered */
+        #signup-view .v1_26 {
+            position: absolute !important;
+            top: 0px !important;
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+            width: 262px !important;
+            text-align: center !important;
+        }
+        
+        /* Ensure Sign In button in top right is visible and properly positioned */
+        #signup-view .v1_23 {
+            position: absolute !important;
+            width: 157px !important;
+            height: 71px !important;
+            top: 43px !important;
+            left: 1285px !important;
+            z-index: 10 !important;
+            cursor: pointer !important;
+            background: rgba(22,79,27,1) !important;
+            border: 2px solid rgba(255,255,255,1) !important;
+            border-radius: 25px !important;
+        }
+        
+        #signup-view .v1_24 {
+            position: absolute !important;
+            width: 177px !important;
+            top: 58px !important;
+            left: 1320px !important;
+            z-index: 11 !important;
+            color: rgba(255,255,255,1) !important;
+            font-family: Inter, sans-serif !important;
+            font-size: 32px !important;
+            pointer-events: none !important; /* Text shouldn't block clicks */
+        }
+        
+        /* Hide back button on left */
+        #signup-view .v1_39,
+        #signup-view .back-text {
+            display: none !important;
+        }
+        
+        /* Make sure all signup inputs are visible */
+        #signup-view .v1_27,
+        #signup-view .v1_28,
+        #signup-view .v1_29,
+        #signup-view .v1_30,
+        #signup-view .v1_31 {
+            position: relative !important;
+            left: 0 !important;
+        }
+        
+        /* Fix signup button positioning */
+        #signup-view .v1_32 {
+            position: absolute !important;
+            width: 339px !important;
+            height: 95px !important;
+            top: 789px !important;
+            left: 303px !important;
+            cursor: pointer !important;
+            z-index: 10 !important;
+        }
+        
+        /* Fix signup button text - centered in button */
+        #signup-view .v1_35 {
+            position: absolute !important;
+            top: 811px !important;
+            left: 303px !important;
+            width: 333px !important;
+            height: 60px !important;
+            line-height: 60px !important;
+            color: rgba(255,255,255,1) !important;
+            font-family: Inria Serif, serif !important;
+            font-size: 32px !important;
+            font-weight: Regular !important;
+            text-align: center !important;
+            pointer-events: none !important;
+            display: block !important;
+            opacity: 1 !important;
+            visibility: visible !important;
+            z-index: 15 !important;
+        }
+        
+        /* Fix signup header positioning */
+        #signup-view .v1_22 {
+            position: relative !important;
+            top: 0 !important;
+            left: 0 !important;
+        }
+        
+        /* Ensure back button elements are visible */
+        #signup-view .v1_39 {
+            position: absolute !important;
+            top: 49px !important;
+            left: 68px !important;
+            z-index: 10 !important;
+        }
+        
+        #signup-view .v1_40 {
+            position: absolute !important;
+            top: 0px !important;
+            left: 0px !important;
+        }
+        
+        #signup-view .v1_41,
+        #signup-view .v1_42,
+        #signup-view .v1_43 {
+            position: absolute !important;
+        }
+        
+        #signup-view .v1_44 {
+            position: absolute !important;
+            top: 9px !important;
+            left: 11px !important;
+        }
+        
+        /* Make inputs functional and sized to match white boxes */
+        .figma-input {
+            position: absolute;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: rgba(22,79,27,1);
+            font-family: Inria Serif, serif;
+            font-size: 32px;
+            width: 100%;
+            height: 100%;
+            padding: 0 20px;
+            z-index: 10;
+            box-sizing: border-box;
+        }
+        
+        /* Input containers - match Figma white box sizes */
+        .input-box {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+        
+        /* Placeholder labels - show when input is empty */
+        .input-label {
+            position: absolute;
+            pointer-events: none;
+            z-index: 5;
+            color: inherit;
+            font-family: inherit;
+            font-size: inherit;
+            transition: opacity 0.2s;
+        }
+        
+        .input-container input:focus ~ .input-label,
+        .input-container input:not(:placeholder-shown) ~ .input-label,
+        .input-container input:valid ~ .input-label {
+            opacity: 0.3;
+        }
+        
+        /* Signup inputs - dark green background, white text */
+        #signup-view .figma-input {
+            color: rgba(255,255,255,1);
+        }
+        
+        #signup-view .input-label {
+            color: rgba(255,255,255,1);
+        }
+        
+        /* Restore original Figma positions for login inputs */
+        .v1_12 {
+            position: absolute !important;
+            width: 950px !important;
+            height: 95px !important;
+            top: 426px !important;
+            left: 303px !important;
+        }
+        
+        .v1_14 {
+            position: absolute !important;
+            width: 950px !important;
+            height: 95px !important;
+            top: 583px !important;
+            left: 303px !important;
+        }
+        
+        /* Restore original Figma positions for login labels */
+        .v1_13 {
+            position: absolute !important;
+            top: 449px !important;
+            left: 265px !important;
+        }
+        
+        .v1_15 {
+            position: absolute !important;
+            top: 606px !important;
+            left: 265px !important;
+        }
+        
+        /* Restore original Figma position for login button */
+        /* Login button - make clickable area match visual size */
+        .v1_16 {
+            position: absolute !important;
+            width: 225px !important;
+            height: 60px !important;
+            top: 740px !important;
+            left: 665px !important;
+            z-index: 10 !important;
+            cursor: pointer !important;
+        }
+        
+        /* Make sure the entire button area is clickable */
+        .v1_16.clickable {
+            width: 225px !important;
+            height: 60px !important;
+        }
+        
+        /* Login button text - centered on button */
+        .v1_17 {
+            position: absolute !important;
+            top: 740px !important;
+            left: 665px !important;
+            width: 225px !important;
+            height: 60px !important;
+            color: rgba(22,79,27,1) !important;
+            font-family: Inria Serif, serif !important;
+            font-size: 32px !important;
+            text-align: center !important;
+            line-height: 60px !important;
+            pointer-events: none !important; /* Text shouldn't block clicks */
+            z-index: 11 !important;
+            display: block !important;
+            opacity: 1 !important;
+        }
+        
+        .v1_18 {
+            position: absolute !important;
+            top: 294px !important;
+            left: 258px !important;
+            width: 262px !important;
+            color: rgba(255,255,255,1) !important;
+            display: none !important; /* Hide duplicate "Log In" text */
+            font-family: Inria Serif, serif !important;
+            font-size: 64px !important;
+            text-align: center !important;
+            pointer-events: none !important; /* Text shouldn't block clicks */
+            display: block !important; /* Ensure text is visible */
+            opacity: 1 !important;
+        }
+        
+        /* Make Lucrum logo consistent across all pages - top left */
+        /* Welcome view - v1_19/v1_20 */
+        #welcome-view .v1_19 {
+            position: absolute !important;
+            top: 0px !important;
+            left: 7px !important;
+        }
+        
+        #welcome-view .v1_20 {
+            position: absolute !important;
+            top: 0px !important;
+            left: 0px !important;
+            color: rgba(255,255,255,1) !important;
+            font-family: Inria Serif, serif !important;
+            font-size: 32px !important;
+        }
+        
+        /* Signup view - v1_44/v1_45 */
+        #signup-view .v1_44 {
+            position: absolute !important;
+            top: 9px !important;
+            left: 11px !important;
+        }
+        
+        #signup-view .v1_45 {
+            position: absolute !important;
+            top: 0px !important;
+            left: 0px !important;
+            color: rgba(255,255,255,1) !important;
+            font-family: Inria Serif, serif !important;
+            font-size: 32px !important;
+        }
+        
+        /* Store view - v1_60/v1_61 */
+        #store-view .v1_60 {
+            position: absolute !important;
+            top: 9px !important;
+            left: 11px !important;
+        }
+        
+        #store-view .v1_61 {
+            position: absolute !important;
+            top: 0px !important;
+            left: 0px !important;
+            color: rgba(255,255,255,1) !important;
+            font-family: Inria Serif, serif !important;
+            font-size: 32px !important;
+        }
+        
+        /* Cart view - v1_76/v1_77 */
+        #cart-view .v1_76 {
+            position: absolute !important;
+            top: 9px !important;
+            left: 11px !important;
+        }
+        
+        #cart-view .v1_77 {
+            position: absolute !important;
+            top: 0px !important;
+            left: 0px !important;
+            color: rgba(255,255,255,1) !important;
+            font-family: Inria Serif, serif !important;
+            font-size: 32px !important;
+        }
+        
+        /* History view - v1_185/v1_186 */
+        #history-view .v1_185 {
+            position: absolute !important;
+            top: 9px !important;
+            left: 11px !important;
+        }
+        
+        #history-view .v1_186 {
+            position: absolute !important;
+            top: 0px !important;
+            left: 0px !important;
+            color: rgba(255,255,255,1) !important;
+            font-family: Inria Serif, serif !important;
+            font-size: 32px !important;
+        }
+        
+        /* Make cart icon consistent across all pages - top left */
+        /* Cart icon on store view */
+        #store-view .v1_53 {
+            position: absolute !important;
+            width: 157px !important;
+            height: 71px !important;
+            top: 43px !important;
+            left: 40px !important;
+            cursor: pointer !important;
+            z-index: 100 !important;
+            background: rgba(22,79,27,1) !important;
+            border: 2px solid rgba(255,255,255,1) !important;
+            border-radius: 25px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
+        
+        /* Hide cart icon on cart/checkout view */
+        #cart-view .cart-icon-button {
+            display: none !important;
+        }
+        
+        #cart-view .v1_71 {
+            position: absolute !important;
+            width: 72px !important;
+            height: 59px !important;
+            top: 49px !important;
+            left: 68px !important;
+        }
+        
+        /* Cart icon on history view - lower z-index so cart icon appears above */
+        #history-view .v1_180 {
+            position: absolute !important;
+            width: 72px !important;
+            height: 59px !important;
+            top: 49px !important;
+            left: 68px !important;
+            cursor: pointer !important;
+            z-index: 1 !important; /* Lower than cart icon */
+        }
+        
+        /* Add cart icon to history view */
+        #history-view .cart-icon-button {
+            position: absolute !important;
+            width: 157px !important;
+            height: 71px !important;
+            top: 43px !important;
+            left: 40px !important;
+            cursor: pointer !important;
+            z-index: 200 !important; /* Higher than v1_180 and other elements */
+            background: rgba(22,79,27,1) !important;
+            border: 2px solid rgba(255,255,255,1) !important;
+            border-radius: 25px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
+        
+        /* Make sure cart icon children don't block clicks */
+        #history-view .cart-icon-button * {
+            pointer-events: none !important;
+        }
+        
+        #history-view .cart-icon-button {
+            pointer-events: auto !important;
+        }
+        
+        /* Ensure cart icon structure is visible in history view */
+        #history-view .cart-icon-button .cart-icon-container {
+            position: relative !important;
+            width: 50px !important;
+            height: 40px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
+        
+        #history-view .cart-icon-button .cart-icon-basket {
+            position: absolute !important;
+            width: 40px !important;
+            height: 30px !important;
+            border: 3px solid rgba(255,255,255,1) !important;
+            border-bottom: none !important;
+            border-radius: 5px 5px 0 0 !important;
+            top: 0 !important;
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+        }
+        
+        #history-view .cart-icon-button .cart-icon-basket::before {
+            content: '' !important;
+            position: absolute !important;
+            width: 15px !important;
+            height: 3px !important;
+            background: rgba(255,255,255,1) !important;
+            top: -8px !important;
+            right: -5px !important;
+            border-radius: 2px !important;
+        }
+        
+        #history-view .cart-icon-button .cart-icon-wheel {
+            position: absolute !important;
+            width: 8px !important;
+            height: 8px !important;
+            border: 2px solid rgba(255,255,255,1) !important;
+            border-radius: 50% !important;
+            bottom: 0 !important;
+        }
+        
+        #history-view .cart-icon-button .cart-wheel-left {
+            left: 8px !important;
+        }
+        
+        #history-view .cart-icon-button .cart-wheel-right {
+            right: 8px !important;
+        }
+        
+        /* Cart icon structure - reusable */
+        .cart-icon-button .cart-icon-container {
+            position: relative !important;
+            width: 50px !important;
+            height: 40px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
+        
+        .cart-icon-button .cart-icon-basket {
+            position: absolute !important;
+            width: 40px !important;
+            height: 30px !important;
+            border: 3px solid rgba(255,255,255,1) !important;
+            border-bottom: none !important;
+            border-radius: 5px 5px 0 0 !important;
+            top: 0 !important;
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+        }
+        
+        .cart-icon-button .cart-icon-basket::before {
+            content: '' !important;
+            position: absolute !important;
+            width: 15px !important;
+            height: 3px !important;
+            background: rgba(255,255,255,1) !important;
+            top: -8px !important;
+            right: -5px !important;
+            border-radius: 2px !important;
+        }
+        
+        .cart-icon-button .cart-icon-wheel {
+            position: absolute !important;
+            width: 8px !important;
+            height: 8px !important;
+            border: 2px solid rgba(255,255,255,1) !important;
+            border-radius: 50% !important;
+            bottom: 0 !important;
+        }
+        
+        .cart-icon-button .cart-wheel-left {
+            left: 8px !important;
+        }
+        
+        .cart-icon-button .cart-wheel-right {
+            right: 8px !important;
+        }
+        
+        /* Ensure login form container uses original positioning */
+        .v1_10 {
+            position: absolute !important;
+            width: 100% !important;
+            height: 982px !important;
+            top: 982px !important;
+            left: 0px !important;
+        }
+        
+        .v1_11 {
+            position: absolute !important;
+            width: 100% !important;
+            height: 982px !important;
+            top: 0px !important;
+            left: 0px !important;
+        }
+        
+        /* Restore original Figma positions for signup inputs */
+        #signup-view .v1_27 {
+            position: absolute !important;
+            width: 950px !important;
+            height: 95px !important;
+            top: 129px !important;
+            left: 20px !important;
+        }
+        
+        #signup-view .v1_28 {
+            position: absolute !important;
+            width: 950px !important;
+            height: 95px !important;
+            top: 261px !important;
+            left: 20px !important;
+        }
+        
+        #signup-view .v1_29 {
+            position: absolute !important;
+            width: 950px !important;
+            height: 95px !important;
+            top: 393px !important;
+            left: 20px !important;
+        }
+        
+        #signup-view .v1_30 {
+            position: absolute !important;
+            width: 950px !important;
+            height: 95px !important;
+            top: 525px !important;
+            left: 20px !important;
+        }
+        
+        #signup-view .v1_31 {
+            position: absolute !important;
+            width: 950px !important;
+            height: 95px !important;
+            top: 657px !important;
+            left: 20px !important;
+        }
+        
+        /* Restore original Figma position for signup button */
+        #signup-view .v1_32 {
+            position: absolute !important;
+            width: 339px !important;
+            height: 95px !important;
+            top: 789px !important;
+            left: 303px !important;
+            cursor: pointer !important;
+            z-index: 10 !important;
+        }
+        
+        /* Restore signup form container position */
+        #signup-view .v1_25 {
+            position: absolute !important;
+            width: 970px !important;
+            height: 884px !important;
+            top: 230px !important;
+            left: 283px !important;
+            padding: 0 !important;
+        }
+        
+        /* Add more padding inside signup inputs for better spacing */
+        #signup-view .figma-input {
+            padding: 0 30px !important;
+        }
+        
+        /* Fix signup label positions */
+        #signup-view .v1_33, #signup-view .v1_34, #signup-view .v1_36, #signup-view .v1_37, #signup-view .v1_38 {
+            position: absolute !important;
+            left: 20px !important;
+            top: 50% !important;
+            transform: translateY(-50%) !important;
+        }
+        
+        
+        
+        /* Restore original Figma positions for search box and button */
+        #store-view .v1_62 {
+            position: absolute !important;
+            width: calc(100% - 80px) !important;
+            height: 100px !important;
+            top: 184px !important;
+            left: 40px !important;
+        }
+        
+        #store-view .v1_64 {
+            position: absolute !important;
+            width: 133px !important;
+            height: 100px !important;
+            top: 184px !important;
+            left: calc(100% - 173px) !important; /* 1309px from left in 1440px design = right side */
+        }
+        
+        #store-view .v1_65 {
+            position: absolute !important;
+            top: 214px !important;
+            left: calc(100% - 162px) !important; /* 1320px from left */
+        }
+        
+        /* Cart icon/button - top left of header */
+        #store-view .v1_53 {
+            position: absolute !important;
+            width: 157px !important;
+            height: 71px !important;
+            top: 43px !important;
+            left: 40px !important;
+            cursor: pointer !important;
+            z-index: 100 !important;
+            background: rgba(22,79,27,1) !important;
+            border: 2px solid rgba(255,255,255,1) !important;
+            border-radius: 25px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
+        
+        #store-view .v1_53.clickable {
+            cursor: pointer !important;
+        }
+        
+        /* Cart icon structure inside button */
+        #store-view .v1_53 .cart-icon-container {
+            position: relative !important;
+            width: 50px !important;
+            height: 40px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
+        
+        /* Cart basket (main body) */
+        #store-view .v1_53 .cart-icon-basket {
+            position: absolute !important;
+            width: 40px !important;
+            height: 30px !important;
+            border: 3px solid rgba(255,255,255,1) !important;
+            border-bottom: none !important;
+            border-radius: 5px 5px 0 0 !important;
+            top: 0 !important;
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+        }
+        
+        /* Cart handle */
+        #store-view .v1_53 .cart-icon-basket::before {
+            content: '' !important;
+            position: absolute !important;
+            width: 15px !important;
+            height: 3px !important;
+            background: rgba(255,255,255,1) !important;
+            top: -8px !important;
+            right: -5px !important;
+            border-radius: 2px !important;
+        }
+        
+        /* Cart wheels */
+        #store-view .v1_53 .cart-icon-wheel {
+            position: absolute !important;
+            width: 8px !important;
+            height: 8px !important;
+            border: 2px solid rgba(255,255,255,1) !important;
+            border-radius: 50% !important;
+            bottom: 0 !important;
+        }
+        
+        #store-view .v1_53 .cart-wheel-left {
+            left: 8px !important;
+        }
+        
+        #store-view .v1_53 .cart-wheel-right {
+            right: 8px !important;
+        }
+        
+        /* Sign In/Sign Out button - top right of header */
+        #store-view .v1_54 {
+            position: absolute !important;
+            top: 58px !important;
+            left: 1320px !important;
+            cursor: pointer !important;
+            z-index: 100 !important;
+        }
+        
+        /* Hide Sign In when logged in, show Sign Out */
+        #store-view .v1_54.sign-in-only {
+            display: block !important;
+        }
+        
+        #store-view .v1_54.sign-out-only {
+            display: none !important;
+        }
+        
+        body.logged-in #store-view .v1_54.sign-in-only {
+            display: none !important;
+        }
+        
+        body.logged-in #store-view .v1_54.sign-out-only {
+            display: block !important;
+        }
+        
+        
+        .v1_33, .v1_34, .v1_36, .v1_37, .v1_38 {
+            position: absolute !important;
+            left: 20px !important;
+            top: 50% !important;
+            transform: translateY(-50%) !important;
+            margin: 0 !important;
+            pointer-events: none !important;
+            z-index: 5 !important;
+        }
+        
+        .v1_63 {
+            position: absolute !important;
+            left: 20px !important;
+            top: 50% !important;
+            transform: translateY(-50%) !important;
+            margin: 0 !important;
+            pointer-events: none !important;
+            z-index: 5 !important;
+        }
+        
+        /* Restore original Figma positions for payment form inputs */
+        #cart-view .v1_117 {
+            position: absolute !important;
+            width: 518px !important;
+            height: 64px !important;
+            top: 266px !important;
+            left: 979px !important;
+            z-index: 10 !important;
+        }
+        
+        #cart-view .v1_120 {
+            position: absolute !important;
+            width: 518px !important;
+            height: 64px !important;
+            top: 357px !important;
+            left: 979px !important;
+            z-index: 10 !important;
+        }
+        
+        #cart-view .v1_123 {
+            position: absolute !important;
+            width: 518px !important;
+            height: 64px !important;
+            top: 448px !important;
+            left: 979px !important;
+            z-index: 10 !important;
+        }
+        
+        #cart-view .v1_126 {
+            position: absolute !important;
+            width: 518px !important;
+            height: 64px !important;
+            top: 539px !important;
+            left: 979px !important;
+            z-index: 10 !important;
+        }
+        
+        #cart-view .v1_129 {
+            position: absolute !important;
+            width: 518px !important;
+            height: 64px !important;
+            top: 613px !important;
+            left: 979px !important;
+            z-index: 10 !important;
+        }
+        
+        /* Fix payment form labels */
+        .v1_119, .v1_122, .v1_125, .v1_128, .v1_131 {
+            position: absolute !important;
+            left: 21px !important;
+            top: 50% !important;
+            transform: translateY(-50%) !important;
+            margin: 0 !important;
+            pointer-events: none !important;
+            z-index: 5 !important;
+        }
+        
+        /* Ensure payment input background boxes are visible */
+        #cart-view .v1_118,
+        #cart-view .v1_121,
+        #cart-view .v1_124,
+        #cart-view .v1_127,
+        #cart-view .v1_130 {
+            position: absolute !important;
+            width: 100% !important;
+            height: 100% !important;
+            top: 0 !important;
+            left: 0 !important;
+            background: rgba(22,79,27,1) !important;
+            border-radius: 20px !important;
+            z-index: 0 !important;
+        }
+        
+        /* Ensure payment inputs are visible and functional */
+        #cart-view .v1_117 .figma-input,
+        #cart-view .v1_120 .figma-input,
+        #cart-view .v1_123 .figma-input,
+        #cart-view .v1_126 .figma-input,
+        #cart-view .v1_129 .figma-input {
+            position: absolute !important;
+            width: 100% !important;
+            height: 100% !important;
+            top: 0 !important;
+            left: 0 !important;
+            z-index: 10 !important;
+        }
+        
+        /* Ensure input containers are properly positioned */
+        #cart-view .v1_117 .input-container,
+        #cart-view .v1_120 .input-container,
+        #cart-view .v1_123 .input-container,
+        #cart-view .v1_126 .input-container,
+        #cart-view .v1_129 .input-container {
+            position: absolute !important;
+            width: 100% !important;
+            height: 100% !important;
+            top: 0 !important;
+            left: 0 !important;
+        }
+        
+        /* Align checkout numbers (Subtotal, Shipping, Total) - simple fix */
+        #cart-view .v1_108,
+        #cart-view .v1_111,
+        #cart-view .v1_114 {
+            overflow: visible !important;
+            white-space: nowrap !important;
+            width: auto !important;
+            min-width: 100px !important;
+        }
+        
+        /* Adjust shipping number position - move it slightly left */
+        #cart-view .v1_114 {
+            left: 420px !important; /* Move left from 441px to align better */
+        }
+        
+        #cart-view .v1_107,
+        #cart-view .v1_110,
+        #cart-view .v1_113 {
+            overflow: visible !important;
+        }
+        
+        /* Ensure checkout button is visible */
+        #cart-view .v1_132 {
+            position: absolute !important;
+            width: 913px !important;
+            height: 64px !important;
+            top: 871px !important;
+            left: 29px !important;
+            z-index: 10 !important;
+        }
+        
+        #cart-view .v1_133 {
+            position: absolute !important;
+            width: 100% !important;
+            height: 100% !important;
+            top: 0 !important;
+            left: 0 !important;
+            background: rgba(22,79,27,1) !important;
+            border-radius: 20px !important;
+            z-index: 0 !important;
+        }
+        
+        #cart-view .v1_134 {
+            position: absolute !important;
+            width: 139px !important;
+            top: 8px !important;
+            left: 387px !important;
+            color: rgba(255,255,255,1) !important;
+            font-family: Inria Serif, serif !important;
+            font-size: 32px !important;
+            z-index: 11 !important;
+            pointer-events: none !important;
+        }
+        
+        
+        /* Make buttons clickable */
+        .clickable, button {
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        /* Message display */
+        .message {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 15px 30px;
+            border-radius: 5px;
+            z-index: 10000;
+            display: none;
+            font-family: Inter, sans-serif;
+            font-size: 16px;
+        }
+        
+        .message.success {
+            background: #4CAF50;
+            color: white;
+        }
+        
+        .message.error {
+            background: #f44336;
+            color: white;
+        }
+        
+        /* Hide messages on signup page */
+        #signup-view.active ~ #global-message {
+            display: none !important;
+        }
+        
+        /* Ensure search functionality is visible and working */
+        #store-view #start-search-text {
+            display: block !important;
+        }
+        
+        /* Hide "Start Your Search" when catalog has items */
+        #store-view #catalog-list:not(:empty) ~ #start-search-text {
+            display: none !important;
+        }
+        
+        /* Force hide when search is active - override the block rule */
+        #store-view #start-search-text[style*="display: none"],
+        #store-view #start-search-text.hidden {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+        }
+        
+        /* Store view adjustments */
+        #store-view .v1_51 {
+            position: relative !important;
+        }
+        
+        /* Cart view adjustments */
+        #cart-view .v1_67 {
+            position: relative !important;
+        }
+        
+        /* Back to Store button in cart view */
+        #cart-view .back-to-store-button {
+            position: absolute !important;
+            left: 40px !important;
+            top: 43px !important;
+            width: 200px !important;
+            height: 71px !important;
+            background: rgba(22,79,27,1) !important;
+            border: 2px solid rgba(255,255,255,1) !important;
+            border-radius: 10px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            cursor: pointer !important;
+            z-index: 100 !important;
+        }
+        
+        #cart-view .back-to-store-button:hover {
+            background: rgba(15,60,20,1) !important;
+        }
+        
+        #cart-view .back-to-store-text {
+            color: rgba(255,255,255,1) !important;
+            font-family: Inter, sans-serif !important;
+            font-size: 24px !important;
+            font-weight: Regular !important;
+            pointer-events: none !important;
+        }
+        
+        /* Hide original v1_69 if it exists */
+        #cart-view .v1_69 {
+            display: none !important;
+        }
+        
+        /* Order History button - positioned to the left of Sign Out, only visible on thank you page */
+        #history-view .order-history-btn {
+            position: absolute !important;
+            width: 200px !important;
+            height: 71px !important;
+            top: 43px !important;
+            left: 700px !important; /* Positioned well to the left of Sign Out button */
+            background: rgba(22,79,27,1) !important;
+            border: 2px solid rgba(255,255,255,1) !important;
+            border-radius: 25px !important;
+            color: rgba(255,255,255,1) !important;
+            font-family: Inter, sans-serif !important;
+            font-size: 32px !important;
+            font-weight: Regular !important;
+            cursor: pointer !important;
+            z-index: 100 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+        
+        #history-view .order-history-btn:hover {
+            background: rgba(15,60,20,1) !important;
+        }
+        
+        /* Hide Order History button when viewing actual order history */
+        #history-view.showing-history .order-history-btn {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- Global message display -->
+    <div id="global-message" class="message"></div>
+
+    <!-- WELCOME VIEW (v1_2) - Landing page with welcome message and login -->
+    <div id="welcome-view" class="view-screen active">
+        <div class="v3_2">
+            <div class="v1_2">
+                <div class="v1_3"></div>
+                <div class="v1_4 clickable" onclick="showView('signup-view')"></div>
+                <span class="v1_5">About Us</span>
+                <span class="v1_6">Contact Us</span>
+                <span class="v1_7 clickable" onclick="showView('signup-view')">Sign Up</span>
+                <span class="v1_8">Welcome to Lucrum</span>
+                <span class="v1_9">Efficient, Affordable, Reliable.</span>
+                <div class="v1_10">
+                    <div class="v1_11"></div>
+                    <form id="loginForm" class="v1_12" style="position: relative;">
+                        <div class="input-container input-box">
+                            <input type="text" id="login-username" name="username" class="figma-input" placeholder=" " required autocomplete="username">
+                            <span class="v1_13 input-label">Username</span>
+            </div>
+                    </form>
+                    <div class="v1_14" style="position: relative;">
+                        <div class="input-container input-box">
+                            <input type="password" id="login-password" name="password" class="figma-input" placeholder=" " required autocomplete="current-password">
+                            <span class="v1_15 input-label">Password</span>
+    </div>
+                    </div>
+                    <div class="v1_16 clickable" id="login-button" onclick="handleLoginButtonClick(event)"></div>
+                    <span class="v1_17">Log In</span>
+                    <span class="v1_18">Log In</span>
+                </div>
+                <div class="v1_19">
+                    <span class="v1_20">Lucrum</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SIGNUP VIEW (v1_21) -->
+    <div id="signup-view" class="view-screen">
+        <div class="v3_2">
+            <div class="v1_21">
+                <div class="v1_22"></div>
+                <div class="v1_23 clickable" onclick="showView('welcome-view')"></div>
+                <span class="v1_24 clickable" onclick="showView('welcome-view')">Sign In</span>
+                <div class="v1_25">
+                    <span class="v1_26">Sign Up</span>
+                    <form id="signupForm">
+                        <div class="v1_27" style="position: relative;">
+                            <div class="input-container input-box">
+                                <input type="text" id="signup-fullname" name="fullname" class="figma-input" placeholder=" " required>
+                                <span class="v1_37 input-label">Enter Full Name</span>
+                            </div>
+                        </div>
+                        <div class="v1_28" style="position: relative;">
+                            <div class="input-container input-box">
+                                <input type="email" id="signup-email" name="email" class="figma-input" placeholder=" " required autocomplete="email">
+                                <span class="v1_38 input-label">Enter Email</span>
+                            </div>
+                        </div>
+                        <div class="v1_29" style="position: relative;">
+                            <div class="input-container input-box">
+                                <input type="text" id="signup-username" name="username" class="figma-input" placeholder=" " required autocomplete="username">
+                                <span class="v1_36 input-label">Username</span>
+                            </div>
+                        </div>
+                        <div class="v1_30" style="position: relative;">
+                            <div class="input-container input-box">
+                                <input type="password" id="signup-password" name="password" class="figma-input" placeholder=" " required autocomplete="new-password">
+                                <span class="v1_33 input-label">Password</span>
+                            </div>
+                        </div>
+                        <div class="v1_31" style="position: relative;">
+                            <div class="input-container input-box">
+                                <input type="password" id="signup-password-confirm" name="password-confirm" class="figma-input" placeholder=" " required autocomplete="new-password">
+                                <span class="v1_34 input-label">Retype Password</span>
+                            </div>
+                        </div>
+                        <div class="v1_32 clickable" id="signup-button" onclick="handleSignupButtonClick(event)"></div>
+                        <span class="v1_35">Sign Up</span>
+                    </form>
+                </div>
+                <div class="v1_44">
+                    <span class="v1_45">Lucrum</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- STORE VIEW (v1_51) - Search/Catalog -->
+    <div id="store-view" class="view-screen">
+        <div class="v3_2">
+            <div class="v1_51">
+                <div class="v1_52"></div>
+                <!-- Cart icon - top left -->
+                <div class="v1_53 clickable" onclick="showView('cart-view'); loadCart();">
+                    <!-- Cart icon structure inside the button -->
+                    <div class="cart-icon-container">
+                        <div class="cart-icon-basket"></div>
+                        <div class="cart-icon-wheel cart-wheel-left"></div>
+                        <div class="cart-icon-wheel cart-wheel-right"></div>
+                    </div>
+                </div>
+                <!-- Sign In - top right (shown when not logged in) -->
+                <span class="v1_54 sign-in-only clickable" onclick="showView('welcome-view')">Sign In</span>
+                <!-- Sign Out - top right (shown when logged in) -->
+                <span class="v1_54 sign-out-only clickable" onclick="logout()" style="display: none;">Sign Out</span>
+                <div class="v1_55">
+                    <div class="v1_56">
+                        <div class="v1_57"></div>
+                        <div class="v1_58"></div>
+                        <div class="v1_59"></div>
+                    </div>
+                </div>
+                <div class="v1_60">
+                    <span class="v1_61">Lucrum</span>
+                </div>
+                <div class="v1_62" style="position: relative;">
+                    <form id="search-form" onsubmit="event.preventDefault(); const input = document.getElementById('catalog-search'); if (input && input.value.trim()) { if (typeof performSearch === 'function') performSearch(input.value.trim()); } return false;" style="position: relative; width: 100%; height: 100%;">
+                        <div class="input-container input-box" style="width: 100%; height: 100%;">
+                            <input type="text" id="catalog-search" class="figma-input" placeholder=" " style="width: 100%; height: 100%;">
+                            <span class="v1_63 input-label">Search Items</span>
+                        </div>
+                    </form>
+                </div>
+                <div class="v1_64 clickable" onclick="event.preventDefault(); const input = document.getElementById('catalog-search'); if (input && input.value.trim()) { if (typeof performSearch === 'function') performSearch(input.value.trim()); } return false;">
+                    <span class="v1_65">Search</span>
+                </div>
+                <span class="v1_66" id="start-search-text" style="position: absolute; top: 407px; left: 385px; width: 742px; color: rgba(22,79,27,1); font-family: Inria Serif, serif; font-size: 128px; text-align: center; z-index: 1;">Start Your Search</span>
+                <!-- Catalog list will be populated here -->
+                <div id="catalog-list" style="position: absolute; top: 417px; left: 39px; width: calc(100% - 78px);"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CART/CHECKOUT VIEW (v1_67) -->
+    <div id="cart-view" class="view-screen">
+        <div class="v3_2">
+            <div class="v1_67">
+                <div class="v1_68"></div>
+                <!-- Back to Store button -->
+                <div class="back-to-store-button clickable" onclick="showView('store-view'); if(typeof loadCatalog === 'function') loadCatalog();">
+                    <span class="back-to-store-text">Back to Store</span>
+                </div>
+                <span class="v1_70 clickable" onclick="logout()">Sign Out</span>
+                <div class="v1_71">
+                    <div class="v1_72">
+                        <div class="v1_73"></div>
+                        <div class="v1_74"></div>
+                        <div class="v1_75"></div>
+                    </div>
+                </div>
+                <div class="v1_76">
+                    <span class="v1_77">Lucrum</span>
+                </div>
+                <!-- Cart items will be populated here -->
+                <div id="cart-list" style="position: absolute; top: 300px; left: 29px; width: 913px;"></div>
+                <span class="v1_105">Check Out Cart</span>
+                <span class="v1_106">Total</span>
+                <div class="v1_107">
+                    <span class="v1_108" id="cart-subtotal">0.00</span>
+                    <span class="v1_109">Subtotal</span>
+                </div>
+                <div class="v1_110">
+                    <span class="v1_111" id="cart-total">0.00</span>
+                    <span class="v1_112">Total</span>
+                </div>
+                <div class="v1_113">
+                    <span class="v1_114" id="cart-shipping">0.00</span>
+                    <span class="v1_115">Shipping</span>
+                </div>
+                <span class="v1_116">Payment</span>
+                <!-- Payment form fields -->
+                <div class="v1_117" style="position: relative;">
+                    <div class="v1_118"></div>
+                    <div class="input-container input-box" style="width: 100%; height: 100%; position: relative; z-index: 1;">
+                        <input type="text" id="card-number" class="figma-input" placeholder=" " required style="width: 100%; height: 100%; color: rgba(255,255,255,1);">
+                        <span class="v1_119 input-label" style="color: rgba(255,255,255,1);">Card Number</span>
+                    </div>
+                </div>
+                <div class="v1_120" style="position: relative;">
+                    <div class="v1_121"></div>
+                    <div class="input-container input-box" style="width: 100%; height: 100%; position: relative; z-index: 1;">
+                        <input type="text" id="card-expiry" class="figma-input" placeholder=" " required style="width: 100%; height: 100%; color: rgba(255,255,255,1);">
+                        <span class="v1_122 input-label" style="color: rgba(255,255,255,1);">Expiration Date</span>
+                    </div>
+                </div>
+                <div class="v1_123" style="position: relative;">
+                    <div class="v1_124"></div>
+                    <div class="input-container input-box" style="width: 100%; height: 100%; position: relative; z-index: 1;">
+                        <input type="password" id="card-cvv" class="figma-input" placeholder=" " required style="width: 100%; height: 100%; color: rgba(255,255,255,1);">
+                        <span class="v1_125 input-label" style="color: rgba(255,255,255,1);">Security Code</span>
+                    </div>
+                </div>
+                <div class="v1_126" style="position: relative;">
+                    <div class="v1_127"></div>
+                    <div class="input-container input-box" style="width: 100%; height: 100%; position: relative; z-index: 1;">
+                        <input type="text" id="card-name" class="figma-input" placeholder=" " required style="width: 100%; height: 100%; color: rgba(255,255,255,1);">
+                        <span class="v1_128 input-label" style="color: rgba(255,255,255,1);">Cardholder Name</span>
+                    </div>
+                </div>
+                <div class="v1_129" style="position: relative;">
+                    <div class="v1_130"></div>
+                    <div class="input-container input-box" style="width: 100%; height: 100%; position: relative; z-index: 1;">
+                        <input type="text" id="ship-address" class="figma-input" placeholder=" " required style="width: 100%; height: 100%; color: rgba(255,255,255,1);">
+                        <span class="v1_131 input-label" style="color: rgba(255,255,255,1);">Address</span>
+                    </div>
+                </div>
+                <div class="v1_132 clickable" onclick="handleCheckout()">
+                    <div class="v1_133"></div>
+                    <span class="v1_134">Checkout</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ORDER HISTORY VIEW (v1_175) -->
+    <div id="history-view" class="view-screen">
+        <div class="v3_2">
+            <div class="v1_175">
+                <div class="v1_176"></div>
+                <div class="v1_177"></div>
+                <span class="v1_178 clickable" onclick="logout()">Sign Out</span>
+                <span class="v1_179">Order History</span>
+                <!-- Order History button - only visible on thank you page -->
+                <button id="order-history-button" class="order-history-btn clickable" onclick="if(window.showOrderHistory) window.showOrderHistory()" style="display: none;">Order History</button>
+                <!-- Cart icon - top left -->
+                <div class="cart-icon-button clickable" onclick="showView('cart-view'); loadCart();">
+                    <div class="cart-icon-container">
+                        <div class="cart-icon-basket"></div>
+                        <div class="cart-icon-wheel cart-wheel-left"></div>
+                        <div class="cart-icon-wheel cart-wheel-right"></div>
+                    </div>
+                </div>
+                <div class="v1_180">
+                    <div class="v1_181">
+                        <div class="v1_182"></div>
+                        <div class="v1_183"></div>
+                        <div class="v1_184"></div>
+                    </div>
+                </div>
+                <div class="v1_185">
+                    <span class="v1_186">Lucrum</span>
+                </div>
+                <span class="v1_187" style="position: absolute; top: 407px; left: 385px; width: 742px; color: rgba(22,79,27,1); font-family: Inria Serif, serif; font-size: 128px; text-align: center;">Confirmed. Thank you!</span>
+                <!-- Past Orders text removed -->
+                <!-- History items will be populated here -->
+                <div id="history-list" style="position: absolute; top: 328px; left: 71px; width: calc(100% - 142px); overflow: visible !important; min-height: 200px; padding-bottom: 50px;"></div>
+            </div>
+            </div>
+    </div>
+
+    <!-- Ensure functions are available immediately for inline onclick handlers -->
+    <script>
+        // Define showView immediately so inline onclick handlers work
+        window.showView = function(viewId) {
+            document.querySelectorAll('.view-screen').forEach(view => {
+                view.classList.remove('active');
+            });
+            const view = document.getElementById(viewId);
+            if (view) {
+                view.classList.add('active');
+                window.scrollTo(0, 0);
+            }
+        };
+        
+        // Define SAMPLE_PRODUCTS immediately so search works
+        // Use backend-compatible product IDs (ITEM001, ITEM002, etc.) for first 5 items
+        // For additional items, use sequential IDs that can be mapped
+        window.SAMPLE_PRODUCTS = window.SAMPLE_PRODUCTS || [
+            { id: 'ITEM001', name: 'Laptop Pro 15', description: 'High-performance laptop with 16GB RAM and SSD', price: 999.99 },
+            { id: 'ITEM002', name: 'Wireless Mouse', description: 'Ergonomic wireless mouse with long battery life', price: 29.99 },
+            { id: 'ITEM003', name: 'Mechanical Keyboard', description: 'RGB backlit mechanical keyboard with blue switches', price: 79.99 },
+            { id: 'ITEM004', name: '4K Monitor', description: 'Ultra sharp IPS panel with 95% DCI-P3 coverage', price: 299.99 },
+            { id: 'ITEM005', name: 'USB-C Hub', description: '7-in-1 USB-C hub with HDMI and SD card reader', price: 49.99 },
+            { id: 'ITEM006', name: 'Monitor Stand', description: 'Adjustable monitor stand with cable management', price: 39.99 },
+            { id: 'ITEM007', name: 'Webcam HD', description: '1080p HD webcam with built-in microphone', price: 79.99 },
+            { id: 'ITEM008', name: 'Laptop Stand', description: 'Aluminum laptop stand for better ergonomics', price: 59.99 },
+            { id: 'ITEM009', name: 'USB-C Cable', description: '6ft USB-C to USB-C charging cable', price: 19.99 },
+            { id: 'ITEM010', name: 'Gaming Headset', description: 'Wireless gaming headset with surround sound', price: 149.99 },
+            { id: 'ITEM011', name: 'External Hard Drive', description: '2TB portable external hard drive', price: 89.99 },
+            { id: 'ITEM012', name: 'Wireless Charger', description: 'Fast wireless charging pad for phones', price: 34.99 },
+            { id: 'ITEM013', name: 'Laptop Sleeve', description: 'Protective laptop sleeve with padding', price: 24.99 },
+            { id: 'ITEM014', name: 'HDMI Cable', description: '10ft high-speed HDMI 2.0 cable', price: 14.99 },
+            { id: 'ITEM015', name: 'Mouse Pad', description: 'Large gaming mouse pad with RGB lighting', price: 29.99 }
+        ];
+        
+        // Define performSearch - will be replaced by module version when it loads
+        // This is a fallback that does simple local search
+        window.performSearch = function performSearchFallback(query) {
+            // When module loads, it will replace this function entirely
+            // So if we're still this function, do a simple local search
+            console.log('performSearch fallback called');
+            if (!query || !query.trim()) {
+                const startSearchText = document.getElementById('start-search-text');
+                if (startSearchText) startSearchText.style.display = 'block';
+                return;
+            }
+            
+            const catalogList = document.getElementById('catalog-list');
+            const startSearchText = document.getElementById('start-search-text');
+            const sampleProducts = window.SAMPLE_PRODUCTS || [];
+            
+            if (startSearchText) {
+                startSearchText.style.setProperty('display', 'none', 'important');
+            }
+            
+            if (sampleProducts && sampleProducts.length > 0) {
+                const queryLower = query.toLowerCase();
+                const results = sampleProducts.filter(p => {
+                    if (!p) return false;
+                    const nameMatch = p.name && p.name.toLowerCase().includes(queryLower);
+                    const descMatch = p.description && p.description.toLowerCase().includes(queryLower);
+                    return nameMatch || descMatch;
+                });
+                
+                if (catalogList) {
+                    // Clear old results completely
+                    while (catalogList.firstChild) {
+                        catalogList.removeChild(catalogList.firstChild);
+                    }
+                    
+                    if (results.length > 0) {
+                        catalogList.innerHTML = results.map((item, index) => `
+                            <div style="position: relative; width: 100%; height: 150px; margin-bottom: 20px; background: rgba(255,255,255,0.9); border-radius: 10px; display: flex; align-items: center; padding: 20px; cursor: pointer;" data-product-id="${item.id}">
+                                <div style="width: 150px; height: 150px; background: rgba(217,217,217,1); border-radius: 5px; margin-right: 20px; display: flex; align-items: center; justify-content: center; color: rgba(0,0,0,1); font-family: Inter, sans-serif; font-size: 32px;">Image</div>
+                                <div style="flex: 1;">
+                                    <h3 style="margin: 0 0 10px 0; font-family: Inter, sans-serif; font-size: 32px; color: rgba(0,0,0,1);">${item.name || 'Search Result'}</h3>
+                                    <p style="margin: 0 0 10px 0; color: rgba(0,0,0,0.5); font-family: Inter, sans-serif; font-size: 32px;">${item.description || 'Item description.'}</p>
+                                    <p style="margin: 0; font-weight: bold; color: rgba(0,0,0,1); font-family: Inter, sans-serif; font-size: 32px;">$${item.price ? item.price.toFixed(2) : 'Price'}</p>
+                                </div>
+                                <button data-product-id="${item.id}" class="buy-button" onclick="event.stopPropagation(); if(window.addToCart && typeof window.addToCart === 'function') { window.addToCart('${String(item.id).replace(/'/g, "\\'")}'); } else { console.error('addToCart not available'); }" style="width: 133px; height: 100px; background: rgba(22,79,27,1); color: white; border: none; border-radius: 20px; cursor: pointer; font-family: Inter, sans-serif; font-size: 32px; margin-left: 20px;">Buy</button>
+                            </div>
+                        `).join('');
+                    } else {
+                        catalogList.innerHTML = '<p style="color: rgba(0,0,0,0.5); font-family: Inter, sans-serif; font-size: 32px; text-align: center; margin-top: 100px;">No results found</p>';
+                    }
+                }
+            }
+        };
+        
+        // Define addToCart immediately so Buy buttons work
+        window.addToCart = async function(productId) {
+            console.log('addToCart called (inline version) with productId:', productId);
+            const token = localStorage.getItem('token');
+            if (!token) {
+                const msgEl = document.getElementById('global-message');
+                if (msgEl) {
+                    msgEl.textContent = 'Please log in to add items to cart';
+                    msgEl.className = 'message error';
+                    msgEl.style.display = 'block';
+                    setTimeout(() => msgEl.style.display = 'none', 5000);
+                } else {
+                    alert('Please log in to add items to cart');
+                }
+                return;
+            }
+            
+            try {
+                const response = await fetch('http://localhost:3000/api/cart', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ productId, quantity: 1 })
+                });
+                
+                const data = await response.json();
+                console.log('Add to cart response:', data);
+                
+                if (data.success) {
+                    const msgEl = document.getElementById('global-message');
+                    if (msgEl) {
+                        msgEl.textContent = 'Item added to cart';
+                        msgEl.className = 'message success';
+                        msgEl.style.display = 'block';
+                        setTimeout(() => msgEl.style.display = 'none', 5000);
+                    }
+                    
+                    // Directly render cart from response data
+                    const cart = data.cart || [];
+                    const total = data.total || 0;
+                    
+                    // Calculate subtotal and shipping
+                    let subtotal = 0;
+                    if (cart && cart.length > 0) {
+                        subtotal = cart.reduce((sum, item) => {
+                            const itemPrice = item.price || 0;
+                            const quantity = item.quantity || 1;
+                            return sum + (itemPrice * quantity);
+                        }, 0);
+                    }
+                    const shipping = (cart && cart.length > 0 && subtotal > 0) ? 5.00 : 0.00;
+                    const calculatedTotal = subtotal + shipping;
+                    
+                    // Render cart items
+                    const cartList = document.getElementById('cart-list');
+                    if (cartList) {
+                        if (!cart || cart.length === 0) {
+                            cartList.innerHTML = '<p style="color: rgba(0,0,0,0.5); font-family: Inter, sans-serif; font-size: 32px;">Your cart is empty</p>';
+                        } else {
+                            cartList.innerHTML = cart.map((item, index) => {
+                                const itemClasses = ['v1_78', 'v1_87', 'v1_96'];
+                                const itemClass = itemClasses[index % itemClasses.length];
+                                const itemPrice = item.price || 0;
+                                const quantity = item.quantity || 1;
+                                const itemTotal = itemPrice * quantity;
+                                return `
+                                    <div class="${itemClass}" style="position: relative; width: 913px; height: 150px; margin-bottom: 20px; background: rgba(255,255,255,0.9); border-radius: 10px; display: flex; align-items: center; padding: 20px;">
+                                        <div style="width: 150px; height: 150px; background: rgba(217,217,217,1); border-radius: 5px; margin-right: 20px; display: flex; align-items: center; justify-content: center; color: rgba(0,0,0,1); font-family: Inter, sans-serif; font-size: 32px;">Image</div>
+                                        <div style="flex: 1;">
+                                            <h4 style="margin: 0 0 10px 0; font-family: Inter, sans-serif; font-size: 32px; color: rgba(0,0,0,1);">${item.name || 'Item One'}</h4>
+                                            <p style="margin: 0 0 10px 0; color: rgba(0,0,0,0.5); font-family: Inter, sans-serif; font-size: 32px;">${item.description || 'Item description.'}</p>
+                                            <p style="margin: 0; font-weight: bold; color: rgba(0,0,0,1); font-family: Inter, sans-serif; font-size: 32px;">$${itemTotal.toFixed(2)}</p>
+                                        </div>
+                                        <button onclick="if(window.removeFromCart) window.removeFromCart('${String(item.productId).replace(/'/g, "\\'")}')" style="width: 186px; height: 100px; background: rgba(217,217,217,1); color: rgba(0,0,0,1); border: none; border-radius: 20px; cursor: pointer; font-family: Inter, sans-serif; font-size: 32px; margin-left: 20px;">Remove</button>
+                                    </div>
+                                `;
+                            }).join('');
+                        }
+                    }
+                    
+                    // Update totals
+                    const subtotalEl = document.getElementById('cart-subtotal');
+                    const totalEl = document.getElementById('cart-total');
+                    const shippingEl = document.getElementById('cart-shipping');
+                    if (subtotalEl) subtotalEl.textContent = subtotal.toFixed(2);
+                    if (totalEl) totalEl.textContent = calculatedTotal.toFixed(2);
+                    if (shippingEl) shippingEl.textContent = shipping.toFixed(2);
+                    
+                    // Navigate to cart view
+                    if (window.showView && typeof window.showView === 'function') {
+                        window.showView('cart-view');
+                    }
+                } else {
+                    const msgEl = document.getElementById('global-message');
+                    if (msgEl) {
+                        msgEl.textContent = data.message || 'Failed to add item';
+                        msgEl.className = 'message error';
+                        msgEl.style.display = 'block';
+                        setTimeout(() => msgEl.style.display = 'none', 5000);
+                    } else {
+                        alert(data.message || 'Failed to add item');
+                    }
+                }
+            } catch (error) {
+                console.error('Add to cart error:', error);
+                const msgEl = document.getElementById('global-message');
+                if (msgEl) {
+                    msgEl.textContent = 'Failed to add item';
+                    msgEl.className = 'message error';
+                    msgEl.style.display = 'block';
+                    setTimeout(() => msgEl.style.display = 'none', 5000);
+                } else {
+                    alert('Failed to add item');
+                }
+            }
+        };
+        
+        // Define handleCheckout immediately so checkout button works
+        window.handleCheckout = async function() {
+            console.log('handleCheckout called (inline version)');
+            const token = localStorage.getItem('token');
+            if (!token) {
+                const msgEl = document.getElementById('global-message');
+                if (msgEl) {
+                    msgEl.textContent = 'Please log in to checkout';
+                    msgEl.className = 'message error';
+                    msgEl.style.display = 'block';
+                    setTimeout(() => msgEl.style.display = 'none', 5000);
+                } else {
+                    alert('Please log in to checkout');
+                }
+                return;
+            }
+            
+            // Get form values
+            const cardNumberEl = document.getElementById('card-number');
+            const cardExpiryEl = document.getElementById('card-expiry');
+            const cardCvvEl = document.getElementById('card-cvv');
+            const cardNameEl = document.getElementById('card-name');
+            const addressEl = document.getElementById('ship-address');
+            
+            if (!cardNumberEl || !cardExpiryEl || !cardCvvEl || !cardNameEl || !addressEl) {
+                const msgEl = document.getElementById('global-message');
+                if (msgEl) {
+                    msgEl.textContent = 'Payment form not ready. Please refresh the page.';
+                    msgEl.className = 'message error';
+                    msgEl.style.display = 'block';
+                    setTimeout(() => msgEl.style.display = 'none', 5000);
+                }
+                return;
+            }
+            
+            const cardNumber = cardNumberEl.value.trim();
+            const cardExpiry = cardExpiryEl.value.trim();
+            const cardCvv = cardCvvEl.value.trim();
+            const cardName = cardNameEl.value.trim();
+            const address = addressEl.value.trim();
+            
+            // Validate all fields are filled
+            if (!cardNumber || !cardExpiry || !cardCvv || !cardName || !address) {
+                const msgEl = document.getElementById('global-message');
+                if (msgEl) {
+                    msgEl.textContent = 'Please fill in all payment fields';
+                    msgEl.className = 'message error';
+                    msgEl.style.display = 'block';
+                    setTimeout(() => msgEl.style.display = 'none', 5000);
+                } else {
+                    alert('Please fill in all payment fields');
+                }
+                return;
+            }
+            
+            // Validate card number: must be 16 digits
+            const cardNumberDigits = cardNumber.replace(/\s+/g, '');
+            if (!/^\d{16}$/.test(cardNumberDigits)) {
+                const msgEl = document.getElementById('global-message');
+                if (msgEl) {
+                    msgEl.textContent = 'Card number must be exactly 16 digits';
+                    msgEl.className = 'message error';
+                    msgEl.style.display = 'block';
+                    setTimeout(() => msgEl.style.display = 'none', 5000);
+                } else {
+                    alert('Card number must be exactly 16 digits');
+                }
+                return;
+            }
+            
+            // Validate expiration date: must be in MM/YY format and not expired
+            const expiryMatch = cardExpiry.match(/^(\d{2})\/(\d{2})$/);
+            if (!expiryMatch) {
+                const msgEl = document.getElementById('global-message');
+                if (msgEl) {
+                    msgEl.textContent = 'Expiration date must be in MM/YY format (e.g., 12/25)';
+                    msgEl.className = 'message error';
+                    msgEl.style.display = 'block';
+                    setTimeout(() => msgEl.style.display = 'none', 5000);
+                } else {
+                    alert('Expiration date must be in MM/YY format (e.g., 12/25)');
+                }
+                return;
+            }
+            
+            const month = parseInt(expiryMatch[1], 10);
+            const year = parseInt(expiryMatch[2], 10);
+            
+            if (month < 1 || month > 12) {
+                const msgEl = document.getElementById('global-message');
+                if (msgEl) {
+                    msgEl.textContent = 'Invalid month. Month must be between 01 and 12';
+                    msgEl.className = 'message error';
+                    msgEl.style.display = 'block';
+                    setTimeout(() => msgEl.style.display = 'none', 5000);
+                } else {
+                    alert('Invalid month. Month must be between 01 and 12');
+                }
+                return;
+            }
+            
+            // Check if card is expired
+            const currentDate = new Date();
+            const currentYear = currentDate.getFullYear() % 100;
+            const currentMonth = currentDate.getMonth() + 1;
+            
+            if (year < currentYear || (year === currentYear && month < currentMonth)) {
+                const msgEl = document.getElementById('global-message');
+                if (msgEl) {
+                    msgEl.textContent = 'Card has expired. Please use a valid expiration date';
+                    msgEl.className = 'message error';
+                    msgEl.style.display = 'block';
+                    setTimeout(() => msgEl.style.display = 'none', 5000);
+                } else {
+                    alert('Card has expired. Please use a valid expiration date');
+                }
+                return;
+            }
+            
+            // Validate CVV: must be 3 or 4 digits
+            if (!/^\d{3,4}$/.test(cardCvv)) {
+                const msgEl = document.getElementById('global-message');
+                if (msgEl) {
+                    msgEl.textContent = 'Security code must be 3 or 4 digits';
+                    msgEl.className = 'message error';
+                    msgEl.style.display = 'block';
+                    setTimeout(() => msgEl.style.display = 'none', 5000);
+                } else {
+                    alert('Security code must be 3 or 4 digits');
+                }
+                return;
+            }
+            
+            // Validate cardholder name
+            if (cardName.length < 2 || !/^[a-zA-Z\s'-]+$/.test(cardName)) {
+                const msgEl = document.getElementById('global-message');
+                if (msgEl) {
+                    msgEl.textContent = 'Cardholder name must contain at least 2 letters';
+                    msgEl.className = 'message error';
+                    msgEl.style.display = 'block';
+                    setTimeout(() => msgEl.style.display = 'none', 5000);
+                } else {
+                    alert('Cardholder name must contain at least 2 letters');
+                }
+                return;
+            }
+            
+            // Validate address
+            if (address.length < 5) {
+                const msgEl = document.getElementById('global-message');
+                if (msgEl) {
+                    msgEl.textContent = 'Please enter a valid shipping address';
+                    msgEl.className = 'message error';
+                    msgEl.style.display = 'block';
+                    setTimeout(() => msgEl.style.display = 'none', 5000);
+                } else {
+                    alert('Please enter a valid shipping address');
+                }
+                return;
+            }
+            
+            // Submit checkout
+            try {
+                const response = await fetch('http://localhost:3000/api/cart/checkout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        shippingAddress: {
+                            fullName: cardName,
+                            line1: address,
+                            city: '',
+                            state: '',
+                            postalCode: '',
+                            country: ''
+                        },
+                        paymentMethod: {
+                            cardholderName: cardName,
+                            cardNumber: cardNumberDigits,
+                            cardExpiry: cardExpiry,
+                            cardCvv: cardCvv,
+                            billingZip: ''
+                        }
+                    })
+                });
+                
+                const data = await response.json();
+                console.log('Checkout response:', data);
+                
+                if (data.success) {
+                    const msgEl = document.getElementById('global-message');
+                    if (msgEl) {
+                        msgEl.textContent = 'Checkout successful!';
+                        msgEl.className = 'message success';
+                        msgEl.style.display = 'block';
+                        setTimeout(() => msgEl.style.display = 'none', 5000);
+                    }
+                    
+                    // Try to use module's functions if available
+                    if (window.loadCart && typeof window.loadCart === 'function') {
+                        window.loadCart();
+                    }
+                    
+                    // Navigate to thank you page
+                    setTimeout(() => {
+                        if (window.showView && typeof window.showView === 'function') {
+                            window.showView('history-view');
+                            
+                            // Hide history list and show thank you message
+                            const historyList = document.getElementById('history-list');
+                            const orderHistoryText = document.querySelector('#history-view .v1_179');
+                            const orderHistoryButton = document.getElementById('order-history-button');
+                            
+                            if (historyList) historyList.style.display = 'none';
+                            if (orderHistoryText) orderHistoryText.style.display = 'none';
+                            if (orderHistoryButton) orderHistoryButton.style.display = 'flex';
+                        }
+                    }, 500);
+                } else {
+                    const msgEl = document.getElementById('global-message');
+                    if (msgEl) {
+                        msgEl.textContent = data.message || 'Checkout failed';
+                        msgEl.className = 'message error';
+                        msgEl.style.display = 'block';
+                        setTimeout(() => msgEl.style.display = 'none', 5000);
+                    } else {
+                        alert(data.message || 'Checkout failed');
+                    }
+                }
+            } catch (error) {
+                console.error('Checkout error:', error);
+                const msgEl = document.getElementById('global-message');
+                if (msgEl) {
+                    msgEl.textContent = 'Checkout failed';
+                    msgEl.className = 'message error';
+                    msgEl.style.display = 'block';
+                    setTimeout(() => msgEl.style.display = 'none', 5000);
+                } else {
+                    alert('Checkout failed');
+                }
+            }
+        };
+        
+        // Define removeFromCart immediately so remove buttons work
+        window.removeFromCart = async function(productId) {
+            console.log('removeFromCart called (inline version) with productId:', productId);
+            const token = localStorage.getItem('token');
+            if (!token) {
+                const msgEl = document.getElementById('global-message');
+                if (msgEl) {
+                    msgEl.textContent = 'Please log in to remove items';
+                    msgEl.className = 'message error';
+                    msgEl.style.display = 'block';
+                    setTimeout(() => msgEl.style.display = 'none', 5000);
+                }
+                return;
+            }
+            
+            try {
+                const response = await fetch('http://localhost:3000/api/cart/' + productId, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                const data = await response.json();
+                console.log('Remove from cart response:', data);
+                
+                if (data.success) {
+                    const msgEl = document.getElementById('global-message');
+                    if (msgEl) {
+                        msgEl.textContent = 'Item removed';
+                        msgEl.className = 'message success';
+                        msgEl.style.display = 'block';
+                        setTimeout(() => msgEl.style.display = 'none', 5000);
+                    }
+                    
+                    // Reload cart
+                    if (window.loadCart && typeof window.loadCart === 'function') {
+                        window.loadCart();
+                    } else {
+                        // Directly update cart from response
+                        const cart = data.cart || [];
+                        const total = data.total || 0;
+                        
+                        let subtotal = 0;
+                        if (cart && cart.length > 0) {
+                            subtotal = cart.reduce((sum, item) => {
+                                const itemPrice = item.price || 0;
+                                const quantity = item.quantity || 1;
+                                return sum + (itemPrice * quantity);
+                            }, 0);
+                        }
+                        const shipping = (cart && cart.length > 0 && subtotal > 0) ? 5.00 : 0.00;
+                        const calculatedTotal = subtotal + shipping;
+                        
+                        const cartList = document.getElementById('cart-list');
+                        if (cartList) {
+                            if (!cart || cart.length === 0) {
+                                cartList.innerHTML = '<p style="color: rgba(0,0,0,0.5); font-family: Inter, sans-serif; font-size: 32px;">Your cart is empty</p>';
+                            } else {
+                                cartList.innerHTML = cart.map((item, index) => {
+                                    const itemClasses = ['v1_78', 'v1_87', 'v1_96'];
+                                    const itemClass = itemClasses[index % itemClasses.length];
+                                    const itemPrice = item.price || 0;
+                                    const quantity = item.quantity || 1;
+                                    const itemTotal = itemPrice * quantity;
+                                    return `
+                                        <div class="${itemClass}" style="position: relative; width: 913px; height: 150px; margin-bottom: 20px; background: rgba(255,255,255,0.9); border-radius: 10px; display: flex; align-items: center; padding: 20px;">
+                                            <div style="width: 150px; height: 150px; background: rgba(217,217,217,1); border-radius: 5px; margin-right: 20px; display: flex; align-items: center; justify-content: center; color: rgba(0,0,0,1); font-family: Inter, sans-serif; font-size: 32px;">Image</div>
+                                            <div style="flex: 1;">
+                                                <h4 style="margin: 0 0 10px 0; font-family: Inter, sans-serif; font-size: 32px; color: rgba(0,0,0,1);">${item.name || 'Item One'}</h4>
+                                                <p style="margin: 0 0 10px 0; color: rgba(0,0,0,0.5); font-family: Inter, sans-serif; font-size: 32px;">${item.description || 'Item description.'}</p>
+                                                <p style="margin: 0; font-weight: bold; color: rgba(0,0,0,1); font-family: Inter, sans-serif; font-size: 32px;">$${itemTotal.toFixed(2)}</p>
+                                            </div>
+                                            <button onclick="if(window.removeFromCart) window.removeFromCart('${String(item.productId).replace(/'/g, "\\'")}')" style="width: 186px; height: 100px; background: rgba(217,217,217,1); color: rgba(0,0,0,1); border: none; border-radius: 20px; cursor: pointer; font-family: Inter, sans-serif; font-size: 32px; margin-left: 20px;">Remove</button>
+                                        </div>
+                                    `;
+                                }).join('');
+                            }
+                        }
+                        
+                        const subtotalEl = document.getElementById('cart-subtotal');
+                        const totalEl = document.getElementById('cart-total');
+                        const shippingEl = document.getElementById('cart-shipping');
+                        if (subtotalEl) subtotalEl.textContent = subtotal.toFixed(2);
+                        if (totalEl) totalEl.textContent = calculatedTotal.toFixed(2);
+                        if (shippingEl) shippingEl.textContent = shipping.toFixed(2);
+                    }
+                } else {
+                    const msgEl = document.getElementById('global-message');
+                    if (msgEl) {
+                        msgEl.textContent = data.message || 'Failed to remove item';
+                        msgEl.className = 'message error';
+                        msgEl.style.display = 'block';
+                        setTimeout(() => msgEl.style.display = 'none', 5000);
+                    }
+                }
+            } catch (error) {
+                console.error('Remove from cart error:', error);
+                const msgEl = document.getElementById('global-message');
+                if (msgEl) {
+                    msgEl.textContent = 'Failed to remove item';
+                    msgEl.className = 'message error';
+                    msgEl.style.display = 'block';
+                    setTimeout(() => msgEl.style.display = 'none', 5000);
+                }
+            }
+        };
+        
+        // Define showOrderHistory immediately so order history button works
+        window.showOrderHistory = function() {
+            console.log('showOrderHistory called (inline version)');
+            const historyView = document.getElementById('history-view');
+            const orderHistoryButton = document.getElementById('order-history-button');
+            const orderHistoryText = document.querySelector('#history-view .v1_179');
+            
+            // Hide the thank you message
+            const thankYouText = document.querySelector('#history-view .v1_187');
+            if (thankYouText) {
+                thankYouText.style.display = 'none';
+            }
+            
+            // Hide the Order History button
+            if (orderHistoryButton) {
+                orderHistoryButton.style.display = 'none';
+            }
+            
+            // Show Order History text
+            if (orderHistoryText) {
+                orderHistoryText.style.display = 'block';
+            }
+            
+            // Show history list
+            const historyList = document.getElementById('history-list');
+            if (historyList) {
+                historyList.style.display = 'block';
+            }
+            
+            // Load and show order history
+            if (window.loadHistory && typeof window.loadHistory === 'function') {
+                window.loadHistory();
+            } else {
+                // Try to load history directly
+                const token = localStorage.getItem('token');
+                if (token) {
+                    fetch('http://localhost:3000/api/purchase-history', {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success && data.history) {
+                            if (historyList) {
+                                if (!data.history || data.history.length === 0) {
+                                    historyList.innerHTML = '<p style="color: rgba(0,0,0,0.5); font-family: Inter, sans-serif; font-size: 32px;">No purchase history</p>';
+                                } else {
+                                    historyList.innerHTML = data.history.flatMap(order => {
+                                        const items = order.items || [];
+                                        if (items.length === 0) {
+                                            const date = order.purchasedAt ? new Date(order.purchasedAt).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' }) : 'Unknown date';
+                                            return [`
+                                                <div class="v1_200" style="position: relative; width: 100%; min-height: 150px; margin-bottom: 20px; background: rgba(255,255,255,0.9); border-radius: 10px; display: flex; align-items: center; padding: 20px; overflow: visible;">
+                                                    <div style="width: 150px; height: 150px; min-width: 150px; background: rgba(217,217,217,1); border-radius: 5px; margin-right: 20px; display: flex; align-items: center; justify-content: center; color: rgba(0,0,0,1); font-family: Inter, sans-serif; font-size: 32px; flex-shrink: 0;">Image</div>
+                                                    <div style="flex: 1; min-width: 0; overflow: visible;">
+                                                        <h4 style="margin: 0 0 10px 0; font-family: Inter, sans-serif; font-size: 32px; color: rgba(0,0,0,1); word-wrap: break-word; overflow-wrap: break-word;">Order ${order.orderId || 'Item One'}</h4>
+                                                        <p style="margin: 0 0 10px 0; color: rgba(0,0,0,0.5); font-family: Inter, sans-serif; font-size: 32px; word-wrap: break-word; overflow-wrap: break-word;">Item description.</p>
+                                                        <p style="margin: 0; font-weight: bold; color: rgba(0,0,0,1); font-family: Inter, sans-serif; font-size: 32px; white-space: nowrap;">$${(order.total || 0).toFixed(2)}</p>
+                                                        <p style="margin: 5px 0 0 0; color: rgba(0,0,0,1); font-family: Inter, sans-serif; font-size: 32px; white-space: nowrap;">${date}</p>
+                                                    </div>
+                                                </div>
+                                            `];
+                                        }
+                                        return items.map((item, itemIndex) => {
+                                            const date = order.purchasedAt ? new Date(order.purchasedAt).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' }) : 'Unknown date';
+                                            return `
+                                                <div class="v1_200" style="position: relative; width: 100%; min-height: 150px; margin-bottom: 20px; background: rgba(255,255,255,0.9); border-radius: 10px; display: flex; align-items: center; padding: 20px; overflow: visible;">
+                                                    <div style="width: 150px; height: 150px; min-width: 150px; background: rgba(217,217,217,1); border-radius: 5px; margin-right: 20px; display: flex; align-items: center; justify-content: center; color: rgba(0,0,0,1); font-family: Inter, sans-serif; font-size: 32px; flex-shrink: 0;">Image</div>
+                                                    <div style="flex: 1; min-width: 0; overflow: visible;">
+                                                        <h4 style="margin: 0 0 10px 0; font-family: Inter, sans-serif; font-size: 32px; color: rgba(0,0,0,1); word-wrap: break-word; overflow-wrap: break-word;">${item.name || 'Item One'}</h4>
+                                                        <p style="margin: 0 0 10px 0; color: rgba(0,0,0,0.5); font-family: Inter, sans-serif; font-size: 32px; word-wrap: break-word; overflow-wrap: break-word;">${item.description || 'Item description.'}</p>
+                                                        <p style="margin: 0; font-weight: bold; color: rgba(0,0,0,1); font-family: Inter, sans-serif; font-size: 32px; white-space: nowrap;">$${(item.subtotal || item.price * item.quantity || 0).toFixed(2)}</p>
+                                                        <p style="margin: 5px 0 0 0; color: rgba(0,0,0,1); font-family: Inter, sans-serif; font-size: 32px; white-space: nowrap;">${date}</p>
+                                                    </div>
+                                                </div>
+                                            `;
+                                        });
+                                    }).join('');
+                                }
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        console.error('History error:', error);
+                    });
+                }
+            }
+            
+            // Add class to indicate we're showing history
+            if (historyView) {
+                historyView.classList.add('showing-history');
+            }
+        };
+        
+        // Define logout immediately so sign out buttons work
+        window.logout = function() {
+            console.log('logout called');
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            
+            // Update login status
+            document.body.classList.remove('logged-in');
+            
+            // Show welcome view
+            window.showView('welcome-view');
+            
+            // Show success message
+            const msgEl = document.getElementById('global-message');
+            if (msgEl) {
+                msgEl.textContent = 'Logged out successfully';
+                msgEl.className = 'message success';
+                msgEl.style.display = 'block';
+                setTimeout(() => msgEl.style.display = 'none', 5000);
+            }
+        };
+        
+        // Define handleLoginButtonClick immediately so login button works
+        window.handleLoginButtonClick = function(event) {
+            console.log('handleLoginButtonClick called (inline version)');
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            
+            // Get form values
+            const usernameEl = document.getElementById('login-username');
+            const passwordEl = document.getElementById('login-password');
+            
+            if (!usernameEl || !passwordEl) {
+                console.error('Login form elements not found');
+                alert('Form not ready. Please refresh the page.');
+                return;
+            }
+            
+            const username = usernameEl.value?.trim();
+            const password = passwordEl.value;
+            
+            console.log('Login attempt (inline):', { username: username ? '***' : 'empty', hasPassword: !!password });
+            
+            if (!username || !password) {
+                const msgEl = document.getElementById('global-message');
+                if (msgEl) {
+                    msgEl.textContent = 'Please enter username and password';
+                    msgEl.className = 'message error';
+                    msgEl.style.display = 'block';
+                    setTimeout(() => msgEl.style.display = 'none', 5000);
+                } else {
+                    alert('Please enter username and password');
+                }
+                return;
+            }
+            
+            // Try to use the module's handleLogin function if available
+            if (window.handleLogin && typeof window.handleLogin === 'function') {
+                console.log('Using module handleLogin');
+                // Create a fake event object
+                const fakeEvent = { preventDefault: () => {}, stopPropagation: () => {} };
+                window.handleLogin(fakeEvent);
+            } else {
+                // Fallback: submit directly via API
+                console.log('Using direct API call (module not loaded yet)');
+                fetch('http://localhost:3000/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                })
+                .then(response => response.json())
+                .then(result => {
+                    console.log('Login response (inline):', result);
+                    const isSuccess = result.success === true || result.success === "true";
+                    const msgEl = document.getElementById('global-message');
+                    
+                    if (!isSuccess) {
+                        if (msgEl) {
+                            msgEl.textContent = result.message || 'Login failed';
+                            msgEl.className = 'message error';
+                            msgEl.style.display = 'block';
+                            setTimeout(() => msgEl.style.display = 'none', 5000);
+                        } else {
+                            alert(result.message || 'Login failed');
+                        }
+                        return;
+                    }
+                    
+                    if (result.token) {
+                        const user = result.user || {
+                            id: result.user_id || username,
+                            username: result.username || username,
+                            email: result.email || ''
+                        };
+                        
+                        // Save to localStorage first
+                        localStorage.setItem('token', result.token);
+                        localStorage.setItem('user', JSON.stringify(user));
+                        
+                        // Update login status immediately
+                        if (window.updateLoginStatus && typeof window.updateLoginStatus === 'function') {
+                            window.updateLoginStatus();
+                        } else {
+                            // Fallback: add logged-in class manually
+                            document.body.classList.add('logged-in');
+                        }
+                        
+                        if (msgEl) {
+                            msgEl.textContent = 'Login successful!';
+                            msgEl.className = 'message success';
+                            msgEl.style.display = 'block';
+                            setTimeout(() => msgEl.style.display = 'none', 5000);
+                        }
+                        
+                        // Navigate to store view immediately (don't wait)
+                        window.showView('store-view');
+                        
+                        // Try to initialize store if function exists
+                        if (window.initializeStore && typeof window.initializeStore === 'function') {
+                            setTimeout(() => {
+                                window.initializeStore();
+                            }, 100);
+                        }
+                        
+                        // Prevent the module's DOMContentLoaded from redirecting
+                        // by ensuring token and user are set before module loads
+                        // If module already loaded, it should see the token
+                    } else {
+                        if (msgEl) {
+                            msgEl.textContent = 'Login failed - missing token';
+                            msgEl.className = 'message error';
+                            msgEl.style.display = 'block';
+                            setTimeout(() => msgEl.style.display = 'none', 5000);
+                        } else {
+                            alert('Login failed - missing token');
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Login error (inline):', error);
+                    const msgEl = document.getElementById('global-message');
+                    if (msgEl) {
+                        msgEl.textContent = 'Network error. Please check the server.';
+                        msgEl.className = 'message error';
+                        msgEl.style.display = 'block';
+                        setTimeout(() => msgEl.style.display = 'none', 5000);
+                    } else {
+                        alert('Network error. Please check the server.');
+                    }
+                });
+            }
+        };
+        
+        // Define handleSignupButtonClick immediately so signup button works
+        // This will be enhanced by the module when it loads
+        window.handleSignupButtonClick = function(event) {
+            console.log('handleSignupButtonClick called (inline version)');
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            
+            // Get form values
+            const usernameEl = document.getElementById('signup-username');
+            const emailEl = document.getElementById('signup-email');
+            const passwordEl = document.getElementById('signup-password');
+            const passwordConfirmEl = document.getElementById('signup-password-confirm');
+            
+            console.log('Form elements found:', {
+                username: !!usernameEl,
+                email: !!emailEl,
+                password: !!passwordEl,
+                passwordConfirm: !!passwordConfirmEl
+            });
+            
+            if (!usernameEl || !emailEl || !passwordEl || !passwordConfirmEl) {
+                console.error('Form elements not found');
+                alert('Form not ready. Please refresh the page.');
+                return; // Form not ready yet
+            }
+            
+            const username = usernameEl.value?.trim();
+            const email = emailEl.value?.trim();
+            const password = passwordEl.value;
+            const passwordConfirm = passwordConfirmEl.value;
+            
+            console.log('Form values:', {
+                username: username ? '***' : 'empty',
+                email: email ? '***' : 'empty',
+                hasPassword: !!password,
+                hasPasswordConfirm: !!passwordConfirm
+            });
+            
+            // Validate
+            if (!username || !email || !password || !passwordConfirm) {
+                console.log('Validation failed: missing fields');
+                const msgEl = document.getElementById('global-message');
+                if (msgEl) {
+                    msgEl.textContent = 'Please fill in all fields';
+                    msgEl.className = 'message error';
+                    msgEl.style.display = 'block';
+                    setTimeout(() => msgEl.style.display = 'none', 5000);
+                } else {
+                    alert('Please fill in all fields');
+                }
+                return;
+            }
+            
+            if (password !== passwordConfirm) {
+                const msgEl = document.getElementById('global-message');
+                if (msgEl) {
+                    msgEl.textContent = 'Passwords do not match';
+                    msgEl.className = 'message error';
+                    msgEl.style.display = 'block';
+                    setTimeout(() => msgEl.style.display = 'none', 5000);
+                }
+                return;
+            }
+            
+            if (password.length < 6) {
+                const msgEl = document.getElementById('global-message');
+                if (msgEl) {
+                    msgEl.textContent = 'Password must be at least 6 characters long';
+                    msgEl.className = 'message error';
+                    msgEl.style.display = 'block';
+                    setTimeout(() => msgEl.style.display = 'none', 5000);
+                }
+                return;
+            }
+            
+            // Try to use the module's submitSignupForm function if available
+            if (window.submitSignupForm && typeof window.submitSignupForm === 'function') {
+                console.log('Using module submitSignupForm');
+                window.submitSignupForm(username, email, password);
+            } else {
+                // Fallback: submit directly via API
+                console.log('Using direct API call (module not loaded yet)');
+                fetch('http://localhost:3000/api/signup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, email, password })
+                })
+                .then(response => response.json())
+                .then(result => {
+                    const isSuccess = result.success === true || result.success === "true";
+                    const msgEl = document.getElementById('global-message');
+                    
+                    if (!isSuccess) {
+                        if (msgEl) {
+                            msgEl.textContent = result.message || 'Signup failed';
+                            msgEl.className = 'message error';
+                            msgEl.style.display = 'block';
+                            setTimeout(() => msgEl.style.display = 'none', 5000);
+                        } else {
+                            alert(result.message || 'Signup failed');
+                        }
+                        return;
+                    }
+                    
+                    if (result.token && result.user) {
+                        localStorage.setItem('token', result.token);
+                        localStorage.setItem('user', JSON.stringify(result.user));
+                        
+                        if (msgEl) {
+                            msgEl.textContent = 'Account created successfully!';
+                            msgEl.className = 'message success';
+                            msgEl.style.display = 'block';
+                            setTimeout(() => msgEl.style.display = 'none', 5000);
+                        }
+                        
+                        // Navigate to store view
+                        setTimeout(() => {
+                            window.showView('store-view');
+                            // Try to initialize store if function exists
+                            if (window.initializeStore && typeof window.initializeStore === 'function') {
+                                window.initializeStore();
+                            } else {
+                                // Reload page to initialize properly
+                                window.location.reload();
+                            }
+                        }, 500);
+                    } else {
+                        if (msgEl) {
+                            msgEl.textContent = 'Signup failed - missing token';
+                            msgEl.className = 'message error';
+                            msgEl.style.display = 'block';
+                            setTimeout(() => msgEl.style.display = 'none', 5000);
+                        } else {
+                            alert('Signup failed - missing token');
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Signup error:', error);
+                    const msgEl = document.getElementById('global-message');
+                    if (msgEl) {
+                        msgEl.textContent = 'Network error. Please check the server.';
+                        msgEl.className = 'message error';
+                        msgEl.style.display = 'block';
+                        setTimeout(() => msgEl.style.display = 'none', 5000);
+                    } else {
+                        alert('Network error. Please check the server.');
+                    }
+                });
+            }
+        };
+    </script>
+    <script type="module" src="figma-app.js"></script>
+</body>
+</html>
